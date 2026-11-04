@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-atelier: #FAF8F5;
+    --text-primary: #191C1A;
+    --text-secondary: #6B726A;
+    --atelier-dark: #1A2421;
+    --atelier-dark-hover: #131A18;
+    --atelier-gold: #9E7B4F;
+    --atelier-gold-light: #C4A47C;
+    --atelier-border: #E8E4DC;
+    --atelier-card: #FFFFFF;
+    --atelier-cream: #F5F1E9;
+  }
+
+  body {
+    background-color: var(--bg-atelier);
+    color: var(--text-primary);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Luxury Typography */
+.font-serif-luxury {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Didot, 'Bodoni MT', Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+.font-sans-luxury {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1ede5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4ccbe;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b5ab99;
+}
+
+/* Status Pill utilities */
+.status-pill-ready {
+  background-color: #EAF3EC;
+  color: #2D5A38;
+}
+
+.status-pill-confirmed {
+  background-color: #EAF3EC;
+  color: #2D5A38;
+}
+
+.status-pill-request {
+  background-color: #FEF6E7;
+  color: #935D15;
+}
+
+.status-pill-due {
+  background-color: #FEF6E7;
+  color: #935D15;
+}
+
+.status-pill-rented {
+  background-color: #FBF0EA;
+  color: #8C4624;
+}
+
+.status-pill-care {
+  background-color: #EEF2F6;
+  color: #3B5269;
+}
