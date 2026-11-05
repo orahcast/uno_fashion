@@ -3,217 +3,249 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  Plus,
-  Search,
-  SlidersHorizontal,
-  LayoutList,
-  LayoutGrid,
-  Trash2,
-  Edit,
-  ScanLine,
-  Info,
-} from 'lucide-react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
-import { RentalItem } from '@/lib/types';
-import { formatRWF } from '@/lib/utils';
+import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
 
 export default function InventoryCentralPage() {
   const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
-  const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns' | 'accessories' | 'archived'>('all');
+  const [statusFilter, setStatusFilter] = useState<'All' | InventorySimpleStatus>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [availabilityFilter, setAvailabilityFilter] = useState('all');
-  const [sizeFilter, setSizeFilter] = useState('all');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<RentalItem | null>(null);
 
-  // Deletion handler
+  // Form State
+  const [formName, setFormName] = useState('');
+  const [formCategory, setFormCategory] = useState<ItemCategory>('Suits');
+  const [formSizeRange, setFormSizeRange] = useState('38–44');
+  const [formPrice, setFormPrice] = useState('150000');
+  const [formStatus, setFormStatus] = useState<InventorySimpleStatus>('Available');
+  const [formCondition, setFormCondition] = useState('—');
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const currentStatus = item.simpleStatus || 'Available';
+      if (statusFilter !== 'All' && currentStatus !== statusFilter) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = item.name.toLowerCase().includes(q);
+        const matchesSku = item.sku.toLowerCase().includes(q);
+        const matchesCat = item.category.toLowerCase().includes(q);
+        if (!matchesName && !matchesSku && !matchesCat) return false;
+      }
+
+      return true;
+    });
+  }, [items, statusFilter, searchQuery]);
+
+  const handleInlineStatusChange = (id: string, newStatus: InventorySimpleStatus) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, simpleStatus: newStatus } : item
+      )
+    );
+  };
+
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete ${name}?`)) {
+    if (confirm(`Are you sure you want to delete "${name}"?`)) {
       setItems((prev) => prev.filter((i) => i.id !== id));
     }
   };
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      // Tab filter
-      if (activeTab === 'suits' && item.categorySlug !== 'suits') return false;
-      if (activeTab === 'gowns' && item.categorySlug !== 'gowns') return false;
-      if (activeTab === 'accessories' && item.categorySlug !== 'accessories' && item.categorySlug !== 'veils') return false;
-      if (activeTab === 'archived' && !item.isArchived) return false;
-      if (activeTab !== 'archived' && item.isArchived) return false;
+  const openAddModal = () => {
+    setEditingItem(null);
+    setFormName('');
+    setFormCategory('Suits');
+    setFormSizeRange('38–44');
+    setFormPrice('150000');
+    setFormStatus('Available');
+    setFormCondition('—');
+    setShowItemModal(true);
+  };
 
-      // Search query (Item name or SKU)
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesName = item.name.toLowerCase().includes(query);
-        const matchesSku = item.sku.toLowerCase().includes(query);
-        const matchesColor = item.color.toLowerCase().includes(query);
-        if (!matchesName && !matchesSku && !matchesColor) return false;
-      }
+  const openEditModal = (item: RentalItem) => {
+    setEditingItem(item);
+    setFormName(item.name);
+    setFormCategory(item.category);
+    setFormSizeRange(item.sizeRange || item.sizes.join('–'));
+    setFormPrice(String(item.rentalPrice));
+    setFormStatus(item.simpleStatus || 'Available');
+    setFormCondition(item.condition || '—');
+    setShowItemModal(true);
+  };
 
-      // Availability filter
-      if (availabilityFilter === 'ready' && item.readyStock <= 0) return false;
-      if (availabilityFilter === 'rented' && item.rentedStock <= 0) return false;
-      if (availabilityFilter === 'care' && item.inCareStock <= 0) return false;
+  const handleSaveItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingItem) {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === editingItem.id
+            ? {
+                ...item,
+                name: formName,
+                category: formCategory,
+                sizeRange: formSizeRange,
+                rentalPrice: Number(formPrice) || 0,
+                simpleStatus: formStatus,
+                condition: formCondition,
+              }
+            : item
+        )
+      );
+    } else {
+      const newItem: RentalItem = {
+        id: `item-${Date.now()}`,
+        slug: formName.toLowerCase().replace(/\s+/g, '-'),
+        name: formName,
+        sku: `UF-${Math.floor(100 + Math.random() * 900)}`,
+        category: formCategory,
+        categorySlug:
+          formCategory === 'Bridal gowns'
+            ? 'gowns'
+            : formCategory === 'Accessories'
+            ? 'accessories'
+            : 'suits',
+        color: 'Classic',
+        fabric: 'Atelier Wool',
+        fit: 'Tailored fit',
+        description: formName,
+        rentalPrice: Number(formPrice) || 0,
+        refundableDeposit: 100000,
+        rentalPeriodDays: 4,
+        images: [
+          'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200',
+        ],
+        sizes: [formSizeRange],
+        sizeRange: formSizeRange,
+        simpleStatus: formStatus,
+        condition: formCondition,
+        stockBySize: [],
+        totalStock: 1,
+        readyStock: formStatus === 'Available' ? 1 : 0,
+        rentedStock: formStatus === 'Rented' ? 1 : 0,
+        inCareStock: formStatus === 'Dry cleaning' ? 1 : 0,
+        status: 'Published',
+        allowOnlineBooking: true,
+        cleaningTurnaroundDays: 1,
+      };
+      setItems((prev) => [newItem, ...prev]);
+    }
+    setShowItemModal(false);
+  };
 
-      // Size filter
-      if (sizeFilter !== 'all' && !item.sizes.includes(sizeFilter)) return false;
-
-      return true;
-    });
-  }, [items, activeTab, searchQuery, availabilityFilter, sizeFilter]);
-
-  const suitsCount = items.filter((i) => i.categorySlug === 'suits' && !i.isArchived).length;
-  const gownsCount = items.filter((i) => i.categorySlug === 'gowns' && !i.isArchived).length;
-  const accessoriesCount = items.filter((i) => (i.categorySlug === 'accessories' || i.categorySlug === 'veils') && !i.isArchived).length;
-  const archivedCount = items.filter((i) => i.isArchived).length;
+  const getStatusSelectStyle = (status: InventorySimpleStatus = 'Available') => {
+    if (status === 'Available') {
+      return 'bg-[#EAF3EC] text-[#2D5A38] border-[#C5DFCD]';
+    }
+    if (status === 'Rented') {
+      return 'bg-[#EEF2F6] text-[#3B5269] border-[#CBD5E1]';
+    }
+    return 'bg-[#FEF6E7] text-[#935D15] border-[#F3D9B1]';
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#191C1A]">
-            Inventory
+          <div className="w-6 h-0.5 bg-[#9E7B4F] mb-2" />
+          <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#191C1A]">
+            Rental Inventory
           </h1>
-          <p className="text-xs text-[#6B726A] mt-1">Manage items and stock.</p>
+          <p className="text-xs text-[#6B726A] mt-0.5">
+            Full catalog management ({items.length} total items)
+          </p>
         </div>
 
-        <Link
-          href="/inventory/new"
-          className="inline-flex items-center space-x-2 bg-[#1A2421] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:bg-black transition-colors self-start sm:self-auto shadow-sm"
+        <button
+          type="button"
+          onClick={openAddModal}
+          className="inline-flex items-center space-x-2 bg-[#9E7B4F] hover:bg-[#86663E] text-white px-4 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors self-start sm:self-auto shadow-xs"
         >
-          <span>Add item</span>
-          <Plus className="w-4 h-4" />
-        </Link>
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add New Item</span>
+        </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center space-x-8 border-b border-[#E8E4DC] overflow-x-auto no-scrollbar">
-        {[
-          { key: 'all', label: `All items ${items.length}` },
-          { key: 'suits', label: `Suits ${suitsCount}` },
-          { key: 'gowns', label: `Bridal gowns ${gownsCount}` },
-          { key: 'accessories', label: `Accessories ${accessoriesCount}` },
-          { key: 'archived', label: `Archived ${archivedCount || 2}` },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key as any)}
-            className={`pb-3 text-xs font-medium transition-colors relative whitespace-nowrap ${
-              activeTab === tab.key
-                ? 'text-[#191C1A] font-semibold'
-                : 'text-[#6B726A] hover:text-[#191C1A]'
-            }`}
-          >
-            {tab.label}
-            {activeTab === tab.key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#191C1A]" />
-            )}
-          </button>
-        ))}
-      </div>
+      {/* Rental Inventory Card */}
+      <div className="bg-white border border-[#E8E4DC] rounded-lg shadow-2xs overflow-hidden">
+        {/* Card Header Bar */}
+        <div className="p-4 sm:px-6 border-b border-[#E8E4DC] flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-[#191C1A]">Rental Inventory</h2>
+            <p className="text-[11px] text-[#6B726A]">
+              {filteredItems.length} of {items.length} items shown
+            </p>
+          </div>
 
-      {/* Search & Filter Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-transparent">
-        {/* Quick-Scan SKU Lookup Bar */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-[#8C938B] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search item name or SKU..."
-            className="w-full bg-white border border-[#D5CFCE] pl-10 pr-10 py-2.5 text-xs text-[#191C1A] placeholder-[#8C938B] focus:outline-none focus:border-[#191C1A] rounded-sm"
-          />
-          <button
-            type="button"
-            onClick={() => setSearchQuery(prompt('Scan barcode or enter SKU:') || searchQuery)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C938B] hover:text-[#191C1A]"
-            title="Scan SKU barcode"
-          >
-            <ScanLine className="w-4 h-4" />
-          </button>
-        </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Quick Search */}
+            <div className="relative w-full sm:w-56">
+              <Search className="w-3.5 h-3.5 text-[#8C8075] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter by name or SKU..."
+                className="w-full bg-[#FAF8F5] border border-[#E5DFD4] rounded-md pl-8 pr-3 py-1.5 text-xs text-[#191C1A] placeholder-[#8C8075] focus:outline-none focus:border-[#9E7B4F]"
+              />
+            </div>
 
-        {/* Dropdown Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Availability */}
-          <select
-            value={availabilityFilter}
-            onChange={(e) => setAvailabilityFilter(e.target.value)}
-            className="bg-white border border-[#D5CFCE] px-3 py-2 text-xs text-[#191C1A] focus:outline-none rounded-sm"
-          >
-            <option value="all">Availability: All</option>
-            <option value="ready">Ready for rental</option>
-            <option value="rented">Currently rented</option>
-            <option value="care">In care / cleaning</option>
-          </select>
+            {/* Segmented Filter */}
+            <div className="inline-flex items-center bg-[#F2ECE1] p-1 rounded-md border border-[#E5DFD4]">
+              {(['All', 'Available', 'Rented', 'Dry cleaning'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setStatusFilter(tab)}
+                  className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${
+                    statusFilter === tab
+                      ? 'bg-white text-[#191C1A] font-semibold shadow-2xs'
+                      : 'text-[#6B726A] hover:text-[#191C1A]'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-          {/* Sizes */}
-          <select
-            value={sizeFilter}
-            onChange={(e) => setSizeFilter(e.target.value)}
-            className="bg-white border border-[#D5CFCE] px-3 py-2 text-xs text-[#191C1A] focus:outline-none rounded-sm"
-          >
-            <option value="all">All sizes</option>
-            <option value="36">Size 36</option>
-            <option value="38">Size 38</option>
-            <option value="40">Size 40</option>
-            <option value="42">Size 42</option>
-            <option value="44">Size 44</option>
-          </select>
-
-          {/* View Toggles */}
-          <div className="flex items-center space-x-1 border border-[#D5CFCE] bg-white p-1 rounded-sm">
             <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-xs transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-[#191C1A] text-white'
-                  : 'text-[#6B726A] hover:text-black'
-              }`}
-              title="List View"
+              type="button"
+              onClick={openAddModal}
+              className="inline-flex items-center space-x-1.5 bg-[#9E7B4F] hover:bg-[#86663E] text-white px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors"
             >
-              <LayoutList className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-xs transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-[#191C1A] text-white'
-                  : 'text-[#6B726A] hover:text-black'
-              }`}
-              title="Grid View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Item</span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Inventory Table (or Grid) */}
-      {viewMode === 'list' ? (
-        <div className="bg-white border border-[#E8E4DC] shadow-sm rounded-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAF8F5] text-[#848B82] uppercase tracking-wider text-[10px] border-b border-[#E8E4DC]">
-                <tr>
-                  <th className="py-3 px-5 font-semibold">Item / SKU</th>
-                  <th className="py-3 px-5 font-semibold">Category</th>
-                  <th className="py-3 px-5 font-semibold">Rental / Deposit</th>
-                  <th className="py-3 px-5 font-semibold">Sizes</th>
-                  <th className="py-3 px-5 font-semibold">Stock Today</th>
-                  <th className="py-3 px-5 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F0EDE6]">
-                {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF8F5]/80 transition-colors">
-                    {/* Item / SKU */}
-                    <td className="py-4 px-5">
-                      <div className="flex items-center space-x-3.5">
-                        <div className="relative w-12 h-16 bg-[#ECE8E1] rounded-xs overflow-hidden flex-shrink-0">
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#F2ECE1]/70 text-[#6B726A] uppercase tracking-wider text-[10px] border-b border-[#E8E4DC]">
+              <tr>
+                <th className="py-3 px-6 font-semibold">Item</th>
+                <th className="py-3 px-4 font-semibold">Category</th>
+                <th className="py-3 px-4 font-semibold">Size</th>
+                <th className="py-3 px-4 font-semibold">Price / Day</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+                <th className="py-3 px-4 font-semibold">Condition</th>
+                <th className="py-3 px-6 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F0EDE6]">
+              {filteredItems.map((item) => {
+                const currentStatus = item.simpleStatus || 'Available';
+                return (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-[#FAF8F5] transition-colors"
+                  >
+                    <td className="py-3.5 px-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative w-10 h-10 rounded-md overflow-hidden bg-[#ECE8E1] flex-shrink-0 border border-[#E8E4DC]">
                           <Image
                             src={item.images[0]}
                             alt={item.name}
@@ -224,62 +256,64 @@ export default function InventoryCentralPage() {
                         <div>
                           <Link
                             href={`/inventory/${item.id}`}
-                            className="font-semibold text-sm text-[#191C1A] hover:text-[#9E7B4F] transition-colors"
+                            className="font-semibold text-[#191C1A] hover:text-[#9E7B4F] transition-colors block"
                           >
                             {item.name}
                           </Link>
-                          <div className="text-[11px] text-[#6B726A] mt-0.5">
-                            {item.sku} · {item.color}
-                          </div>
+                          <span className="text-[10px] text-[#8C8075]">{item.sku}</span>
                         </div>
                       </div>
                     </td>
 
-                    {/* Category */}
-                    <td className="py-4 px-5 text-[#52574F]">
-                      {item.category}
+                    <td className="py-3.5 px-4 text-[#52574F]">{item.category}</td>
+
+                    <td className="py-3.5 px-4">
+                      <span className="inline-block bg-[#F2ECE1] text-[#191C1A] text-[11px] font-medium px-2.5 py-0.5 rounded-sm border border-[#E5DFD4]">
+                        {item.sizeRange || item.sizes.join('–')}
+                      </span>
                     </td>
 
-                    {/* Rental / Deposit */}
-                    <td className="py-4 px-5">
-                      <div className="font-semibold text-[#191C1A]">
-                        {formatRWF(item.rentalPrice)} / {item.rentalPeriodDays} days
-                      </div>
-                      <div className="text-[11px] text-[#6B726A]">
-                        {formatRWF(item.refundableDeposit)} refundable
-                      </div>
+                    <td className="py-3.5 px-4 font-bold text-[#191C1A]">
+                      RWF {item.rentalPrice.toLocaleString('en-US')}
                     </td>
 
-                    {/* Sizes */}
-                    <td className="py-4 px-5">
-                      <div className="font-medium text-[#191C1A]">
-                        {item.sizes.join(' · ')}
-                      </div>
-                      <div className="text-[11px] text-[#6B726A]">UK sizing</div>
+                    <td className="py-3.5 px-4">
+                      <select
+                        value={currentStatus}
+                        onChange={(e) =>
+                          handleInlineStatusChange(
+                            item.id,
+                            e.target.value as InventorySimpleStatus
+                          )
+                        }
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${getStatusSelectStyle(
+                          currentStatus
+                        )}`}
+                      >
+                        <option value="Available">● Available</option>
+                        <option value="Rented">● Rented</option>
+                        <option value="Dry cleaning">● Dry cleaning</option>
+                      </select>
                     </td>
 
-                    {/* Stock Today Turnaround */}
-                    <td className="py-4 px-5">
-                      <div className="font-semibold text-[#2D5A38]">
-                        {item.readyStock} of {item.totalStock} ready
-                      </div>
-                      <div className="text-[11px] text-[#6B726A] mt-0.5">
-                        {item.rentedStock} rented · {item.inCareStock} in care
-                      </div>
+                    <td className="py-3.5 px-4 text-[#6B726A]">
+                      {item.condition || '—'}
                     </td>
 
-                    {/* Actions */}
-                    <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end space-x-3">
-                        <Link
-                          href={`/inventory/${item.id}`}
-                          className="text-xs font-semibold text-[#191C1A] hover:text-[#9E7B4F]"
-                        >
-                          Edit
-                        </Link>
+                    <td className="py-3.5 px-6 text-right">
+                      <div className="inline-flex items-center space-x-3 text-[#6B726A]">
                         <button
+                          type="button"
+                          onClick={() => openEditModal(item)}
+                          className="hover:text-[#191C1A] transition-colors"
+                          title="Quick edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDelete(item.id, item.name)}
-                          className="text-[#969D95] hover:text-red-700 transition-colors"
+                          className="hover:text-red-700 transition-colors"
                           title="Delete item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -287,51 +321,128 @@ export default function InventoryCentralPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add / Edit Item Modal */}
+      {showItemModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#FAF8F5] max-w-md w-full p-6 border border-[#E8E4DC] shadow-2xl space-y-4 rounded-lg">
+            <div className="flex items-center justify-between border-b border-[#E8E4DC] pb-3">
+              <h3 className="font-serif-luxury text-2xl text-[#191C1A]">
+                {editingItem ? 'Edit Inventory Item' : 'Add New Item'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowItemModal(false)}
+                className="text-xs text-[#6B726A] hover:text-black"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-[#6B726A] mb-1 font-medium">Item Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ivory Cream Suit"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#6B726A] mb-1 font-medium">Category</label>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value as ItemCategory)}
+                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
+                  >
+                    <option value="Suits">Suit</option>
+                    <option value="Tuxedo">Tuxedo</option>
+                    <option value="Bridal gowns">Bridal Gown</option>
+                    <option value="Accessories">Accessories</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[#6B726A] mb-1 font-medium">Size Range</label>
+                  <input
+                    type="text"
+                    value={formSizeRange}
+                    onChange={(e) => setFormSizeRange(e.target.value)}
+                    placeholder="e.g. 44–52"
+                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#6B726A] mb-1 font-medium">Price (RWF)</label>
+                  <input
+                    type="number"
+                    required
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#6B726A] mb-1 font-medium">Status</label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) =>
+                      setFormStatus(e.target.value as InventorySimpleStatus)
+                    }
+                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Rented">Rented</option>
+                    <option value="Dry cleaning">Dry cleaning</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[#6B726A] mb-1 font-medium">Condition</label>
+                <input
+                  type="text"
+                  value={formCondition}
+                  onChange={(e) => setFormCondition(e.target.value)}
+                  placeholder="e.g. Excellent or —"
+                  className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
+                />
+              </div>
+
+              <div className="pt-2 flex space-x-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#9E7B4F] hover:bg-[#86663E] text-white py-2.5 rounded-md font-semibold uppercase tracking-wider transition-colors"
+                >
+                  {editingItem ? 'Save Changes' : 'Add Item'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowItemModal(false)}
+                  className="bg-white border border-[#D5CFCE] px-4 py-2.5 rounded-md"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      ) : (
-        /* Grid View */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item) => (
-            <div key={item.id} className="bg-white border border-[#E8E4DC] p-4 rounded-sm shadow-sm space-y-3">
-              <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#ECE8E1] rounded-xs">
-                <Image src={item.images[0]} alt={item.name} fill className="object-cover object-top" />
-              </div>
-              <div className="flex items-baseline justify-between">
-                <div>
-                  <h3 className="font-semibold text-sm text-[#191C1A]">{item.name}</h3>
-                  <span className="text-xs text-[#6B726A]">{item.sku} · {item.color}</span>
-                </div>
-                <span className="text-xs font-semibold text-[#191C1A]">{formatRWF(item.rentalPrice)}</span>
-              </div>
-              <div className="text-xs text-[#2D5A38] font-semibold">
-                {item.readyStock} of {item.totalStock} ready
-              </div>
-              <div className="pt-2 flex justify-between border-t border-[#E8E4DC] text-xs">
-                <Link href={`/inventory/${item.id}`} className="font-semibold text-[#9E7B4F]">Edit Details</Link>
-                <button onClick={() => handleDelete(item.id, item.name)} className="text-red-600">Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
       )}
-
-      {/* Footer Info Box */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#6B726A] pt-4">
-        <span>6 active styles · 38 individual pieces</span>
-        <span className="mt-1 sm:mt-0">Date-specific reservations are shown in each item.</span>
-      </div>
-
-      <div className="bg-[#FAF8F5] border border-[#E8E4DC] p-3 flex items-start space-x-2 text-[11px] text-[#6B726A]">
-        <Info className="w-4 h-4 text-[#9E7B4F] flex-shrink-0 mt-0.5" />
-        <span>
-          Stock is tracked by size. Editing a style updates its website listing; existing confirmed bookings retain their agreed rental price.
-        </span>
-      </div>
     </div>
   );
 }
-

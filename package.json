@@ -7,6 +7,7 @@
     "admin"
   ],
   "scripts": {
+    "dev": "npm run dev --prefix website",
     "dev:website": "npm run dev --prefix website",
     "dev:admin": "npm run dev --prefix admin",
     "build:website": "npm run build --prefix website",
@@ -17,7 +18,7 @@
     "@supabase/supabase-js": "^2.49.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
-    "next": "16.2.6",
+    "next": "^16.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.0.1"
@@ -28,7 +29,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "^15.5.29",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
