@@ -68,6 +68,19 @@ export default function EditItemPage({
       : existingItem.images
   );
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setImages((prev) => [...prev, reader.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const [stockMatrix, setStockMatrix] = useState<SizeStock[]>(
     isNew
       ? [
@@ -375,33 +388,40 @@ export default function EditItemPage({
             {/* Thumbnail Row */}
             <div className="grid grid-cols-3 gap-2 pt-2">
               {images.map((img, idx) => (
-                <div key={idx} className="relative aspect-[4/3] bg-[#ECE8E1] rounded-xs overflow-hidden">
+                <div key={idx} className="relative aspect-[4/3] bg-[#ECE8E1] rounded-xs overflow-hidden group">
                   <Image src={img} alt="thumb" fill className="object-cover" />
+                  {images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                      className="absolute top-1 right-1 bg-black/60 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={() => {
-                  const url = prompt('Enter image URL or choose file:');
-                  if (url) setImages([...images, url]);
-                }}
-                className="aspect-[4/3] border-2 border-dashed border-[#D5CFCE] flex items-center justify-center text-[#8C938B] hover:text-[#191C1A] hover:border-[#191C1A]"
-              >
+              <label className="aspect-[4/3] border-2 border-dashed border-[#D5CFCE] flex flex-col items-center justify-center text-[#8C938B] hover:text-[#191C1A] hover:border-[#191C1A] cursor-pointer transition-colors">
                 <Plus className="w-5 h-5" />
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                const url = prompt('Paste image URL to upload:');
-                if (url) setImages([...images, url]);
-              }}
-              className="w-full flex items-center justify-center space-x-2 border border-[#D5CFCE] bg-white py-2.5 text-xs font-semibold text-[#191C1A] hover:bg-neutral-50"
-            >
+            <label className="w-full flex items-center justify-center space-x-2 border border-[#D5CFCE] bg-white py-2.5 text-xs font-semibold text-[#191C1A] hover:bg-neutral-50 rounded-sm cursor-pointer transition-colors">
               <Upload className="w-3.5 h-3.5" />
-              <span>Upload images</span>
-            </button>
+              <span>Upload image from device</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
             <p className="text-[10px] text-[#8C938B] text-center">
               JPG, PNG or WebP · Up to 10MB each.
             </p>

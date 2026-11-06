@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, CheckCircle2, X } from 'lucide-react';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
 
@@ -21,6 +21,31 @@ export default function InventoryCentralPage() {
   const [formPrice, setFormPrice] = useState('150000');
   const [formStatus, setFormStatus] = useState<InventorySimpleStatus>('Available');
   const [formCondition, setFormCondition] = useState('—');
+  const [formImage, setFormImage] = useState<string>('');
+
+  // Sync with persisted items in localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('uno_inventory_items');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+          }
+        } catch (err) {
+          console.error('Failed to parse saved inventory:', err);
+        }
+      }
+    }
+  }, []);
+
+  const persistItems = (updated: RentalItem[]) => {
+    setItems(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('uno_inventory_items', JSON.stringify(updated));
+    }
+  };
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -40,22 +65,36 @@ export default function InventoryCentralPage() {
   }, [items, statusFilter, searchQuery]);
 
   const handleInlineStatusChange = (id: string, newStatus: InventorySimpleStatus) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, simpleStatus: newStatus } : item
-      )
+    const updated = items.map((item) =>
+      item.id === id ? { ...item, simpleStatus: newStatus } : item
     );
+    persistItems(updated);
   };
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      const updated = items.filter((i) => i.id !== id);
+      persistItems(updated);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setFormImage(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const openAddModal = () => {
     setEditingItem(null);
     setFormName('');
+    setFormImage('');
     setFormCategory('Suits');
     setFormSizeRange('38–44');
     setFormPrice('150000');
@@ -67,6 +106,7 @@ export default function InventoryCentralPage() {
   const openEditModal = (item: RentalItem) => {
     setEditingItem(item);
     setFormName(item.name);
+    setFormImage(item.images?.[0] || '');
     setFormCategory(item.category);
     setFormSizeRange(item.sizeRange || item.sizes.join('–'));
     setFormPrice(String(item.rentalPrice));
@@ -77,22 +117,26 @@ export default function InventoryCentralPage() {
 
   const handleSaveItem = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalImage =
+      formImage.trim() ||
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200';
+
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id
-            ? {
-                ...item,
-                name: formName,
-                category: formCategory,
-                sizeRange: formSizeRange,
-                rentalPrice: Number(formPrice) || 0,
-                simpleStatus: formStatus,
-                condition: formCondition,
-              }
-            : item
-        )
+      const updated = items.map((item) =>
+        item.id === editingItem.id
+          ? {
+              ...item,
+              name: formName,
+              images: [finalImage, ...(item.images.slice(1))],
+              category: formCategory,
+              sizeRange: formSizeRange,
+              rentalPrice: Number(formPrice) || 0,
+              simpleStatus: formStatus,
+              condition: formCondition,
+            }
+          : item
       );
+      persistItems(updated);
     } else {
       const newItem: RentalItem = {
         id: `item-${Date.now()}`,
@@ -113,9 +157,7 @@ export default function InventoryCentralPage() {
         rentalPrice: Number(formPrice) || 0,
         refundableDeposit: 100000,
         rentalPeriodDays: 4,
-        images: [
-          'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200',
-        ],
+        images: [finalImage],
         sizes: [formSizeRange],
         sizeRange: formSizeRange,
         simpleStatus: formStatus,
@@ -129,7 +171,7 @@ export default function InventoryCentralPage() {
         allowOnlineBooking: true,
         cleaningTurnaroundDays: 1,
       };
-      setItems((prev) => [newItem, ...prev]);
+      persistItems([newItem, ...items]);
     }
     setShowItemModal(false);
   };
@@ -356,6 +398,68 @@ export default function InventoryCentralPage() {
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
                 />
+              </div>
+
+              {/* Garment Image Upload */}
+              <div>
+                <label className="block text-[#6B726A] mb-1 font-medium">Garment Image</label>
+                {formImage ? (
+                  <div className="relative flex items-center gap-3 p-2.5 bg-white border border-[#ECDCCB] rounded-xl">
+                    <div className="relative w-14 h-16 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-[#E8E0D5]">
+                      <img
+                        src={formImage}
+                        alt="Garment preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[#191C1A] flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2D6A4F]" />
+                        Photo Attached
+                      </p>
+                      <p className="text-[10px] text-[#6B726A] truncate mt-0.5">
+                        Will be displayed across boutique &amp; online catalog
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <label className="text-[11px] font-semibold text-[#9E7B4F] hover:underline cursor-pointer">
+                          Change photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        <span className="text-[#D5CFCE]">·</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormImage('')}
+                          className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-[#D5CFCE] hover:border-[#9E7B4F] rounded-xl bg-white hover:bg-[#FAF4EB]/40 transition-colors cursor-pointer group">
+                    <div className="w-9 h-9 rounded-full bg-[#FAF8F5] shadow-2xs flex items-center justify-center text-[#9E7B4F] group-hover:scale-105 transition-transform">
+                      <Upload className="w-4 h-4" />
+                    </div>
+                    <span className="mt-1.5 text-xs font-semibold text-[#191C1A]">
+                      Upload garment photo
+                    </span>
+                    <span className="text-[10px] text-[#6B726A]">
+                      JPG, PNG, or WebP from your device
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

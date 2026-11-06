@@ -18,6 +18,8 @@ import {
   ChevronRight,
   ExternalLink,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
 import { INITIAL_ITEMS, INITIAL_CLIENT_BOOK, INITIAL_BOOKINGS } from '@/lib/data/mock-catalog';
 import './globals.css';
@@ -30,6 +32,7 @@ export default function AdminRootLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [globalSearch, setGlobalSearch] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const totalPieces = INITIAL_ITEMS.reduce((sum, item) => sum + item.totalStock, 0);
   const clientBookCount = INITIAL_CLIENT_BOOK.length;
@@ -37,11 +40,11 @@ export default function AdminRootLayout({
 
   const navLinks = [
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { label: 'Landing Hero', href: '/hero', icon: Sparkles },
     { label: 'Web Orders', href: '/bookings', icon: ShoppingBag, badge: String(webOrdersCount) },
     { label: 'Client Book', href: '/customers', icon: BookOpen, badge: String(clientBookCount) },
     { label: 'Inventory', href: '/inventory', icon: Package, badge: String(totalPieces) },
     { label: 'Accolades & VIP', href: '/accolades', icon: Award },
-    { label: 'Services', href: '/services', icon: Sparkles },
     { label: 'Reports', href: '/reports', icon: BarChart3 },
     { label: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -51,6 +54,12 @@ export default function AdminRootLayout({
       return {
         title: 'Dashboard',
         subtitle: "Welcome back — here's your boutique overview at a glance.",
+      };
+    }
+    if (pathname.startsWith('/hero')) {
+      return {
+        title: 'Landing Hero & Storefront Media',
+        subtitle: 'Select or upload the main photoshoot image for the Uno Fashion homepage.',
       };
     }
     if (pathname.startsWith('/bookings')) {
@@ -108,9 +117,9 @@ export default function AdminRootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#FAF8F5] flex flex-col md:flex-row font-sans-luxury text-[#191C1A] antialiased">
-        {/* Desktop Atelier Dark Sidebar (Retaining Uno Fashion Color Scheme) */}
-        <aside className="hidden md:flex flex-col w-64 bg-[#14100E] text-[#FAF8F5] p-5 justify-between flex-shrink-0 border-r border-[#26201B]">
+      <body className="min-h-screen bg-[#FAF8F5] flex flex-col lg:flex-row font-sans-luxury text-[#191C1A] antialiased">
+        {/* Desktop Atelier Dark Sidebar */}
+        <aside className="hidden lg:flex flex-col w-64 bg-[#14100E] text-[#FAF8F5] p-5 justify-between flex-shrink-0 border-r border-[#26201B]">
           <div className="space-y-7">
             {/* Atelier Brand */}
             <Link href="/" className="flex items-center space-x-3 px-2 pt-1">
@@ -211,25 +220,155 @@ export default function AdminRootLayout({
           </div>
         </aside>
 
+        {/* Mobile & Tablet Slide-Out Drawer Navigation */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex">
+            {/* Backdrop Overlay */}
+            <div
+              className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+              onClick={() => setSidebarOpen(false)}
+            />
+
+            {/* Drawer Panel */}
+            <aside className="relative w-72 max-w-[85vw] h-full bg-[#14100E] text-[#FAF8F5] p-5 flex flex-col justify-between shadow-2xl z-50 animate-in slide-in-from-left duration-200">
+              <div className="space-y-6">
+                {/* Brand Header with Close Button */}
+                <div className="flex items-center justify-between pt-1">
+                  <Link
+                    href="/"
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex items-center space-x-3"
+                  >
+                    <div className="w-9 h-9 rounded-md bg-[#C4A47C] text-[#14100E] flex items-center justify-center font-serif-luxury font-bold text-lg shadow-xs">
+                      U
+                    </div>
+                    <div>
+                      <span className="font-serif-luxury text-lg tracking-[0.1em] font-semibold block text-white leading-tight">
+                        Uno Fashion
+                      </span>
+                      <span className="text-[9px] uppercase tracking-[0.22em] text-[#C4A47C] font-semibold block">
+                        INVENTORY CENTRAL
+                      </span>
+                    </div>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-2 -mr-2 rounded-lg text-[#B8ADA2] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    aria-label="Close navigation menu"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Navigation Links */}
+                <nav className="space-y-1.5 overflow-y-auto max-h-[calc(100vh-14rem)]">
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-[#7A7067] font-semibold block px-3 pb-1">
+                    MAIN MENU
+                  </span>
+
+                  {navLinks.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      item.href === '/'
+                        ? pathname === '/'
+                        : pathname.startsWith(item.href);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center justify-between px-3.5 py-3 text-xs font-medium rounded-lg transition-all touch-manipulation ${
+                          isActive
+                            ? 'bg-[#26201C] text-white font-semibold border border-[#3A312A] shadow-2xs'
+                            : 'text-[#B8ADA2] hover:text-white hover:bg-[#1E1916]'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Icon className={`w-4 h-4 ${isActive ? 'text-[#C4A47C]' : ''}`} />
+                          <span>{item.label}</span>
+                        </div>
+
+                        {item.badge && (
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              isActive
+                                ? 'bg-[#C4A47C] text-[#14100E]'
+                                : 'bg-[#26201C] text-[#C4A47C]'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Bottom User Profile & View Storefront */}
+              <div className="space-y-3 pt-5 border-t border-[#26201B]">
+                <a
+                  href="http://localhost:3000"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-2 rounded-md hover:bg-[#1E1916] transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-[#C4A47C]" />
+                  <span>View Storefront</span>
+                </a>
+
+                <div className="flex items-center space-x-3 px-2.5 py-1.5">
+                  <div className="w-8 h-8 rounded-full bg-[#C4A47C] text-[#14100E] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    O
+                  </div>
+                  <div className="text-left min-w-0">
+                    <span className="text-xs font-semibold text-white block truncate">
+                      Boutique Owner
+                    </span>
+                    <span className="text-[10px] text-[#8C8075] block truncate">
+                      owner@unofashion.rw
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        )}
+
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
+        <div className="flex-1 flex flex-col min-w-0 pb-8">
           {/* Top Header Bar */}
-          <header className="bg-[#FAF8F5] border-b border-[#E8E4DC] px-4 sm:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="font-serif-luxury text-lg font-medium text-[#191C1A] leading-tight">
-                {headerMeta.title}
-              </h2>
-              <p className="text-[11px] text-[#6B726A]">{headerMeta.subtitle}</p>
+          <header className="bg-[#FAF8F5] border-b border-[#E8E4DC] px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              {/* Mobile & Tablet Hamburger Button */}
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-2 -ml-2 rounded-lg text-[#191C1A] hover:bg-[#EAE4D9] active:bg-[#DDD5C7] transition-colors touch-manipulation cursor-pointer"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              <div>
+                <h2 className="font-serif-luxury text-base sm:text-lg font-medium text-[#191C1A] leading-tight">
+                  {headerMeta.title}
+                </h2>
+                <p className="text-[11px] text-[#6B726A] hidden sm:block">{headerMeta.subtitle}</p>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <form onSubmit={handleGlobalSearch} className="relative w-full sm:w-72">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <form onSubmit={handleGlobalSearch} className="relative w-36 sm:w-64 md:w-72">
                 <Search className="w-3.5 h-3.5 text-[#8C8075] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={globalSearch}
                   onChange={(e) => setGlobalSearch(e.target.value)}
-                  placeholder="Search inventory, clients, orders..."
+                  placeholder="Search..."
                   className="w-full bg-[#F2ECE1] border border-[#E5DFD4] rounded-md pl-8 pr-3 py-1.5 text-xs text-[#191C1A] placeholder-[#8C8075] focus:outline-none focus:bg-white focus:border-[#9E7B4F] transition-colors"
                 />
               </form>
@@ -237,7 +376,7 @@ export default function AdminRootLayout({
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="p-2 rounded-md bg-[#F2ECE1] border border-[#E5DFD4] text-[#6B726A] hover:text-[#191C1A] transition-colors"
+                className="p-2 rounded-md bg-[#F2ECE1] border border-[#E5DFD4] text-[#6B726A] hover:text-[#191C1A] transition-colors hidden sm:inline-flex"
                 title="Refresh"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -261,27 +400,6 @@ export default function AdminRootLayout({
           {/* Page Children */}
           <main className="p-4 sm:p-8 flex-1">{children}</main>
         </div>
-
-        {/* Mobile Bottom Navigation Bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#14100E] border-t border-[#26201B] text-[#B8ADA2] px-3 py-2 flex items-center justify-around shadow-2xl">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-col items-center py-1 ${
-                  isActive ? 'text-[#C4A47C] font-semibold' : ''
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-[10px] mt-1">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
       </body>
     </html>
   );
