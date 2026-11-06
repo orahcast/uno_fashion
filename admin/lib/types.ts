@@ -69,6 +69,16 @@ export interface Booking {
   createdAt: string;
 }
 
+export interface AccoladeItem {
+  id: string;
+  title: string;
+  category: 'Celebrity' | 'Certification' | 'Award' | 'Press';
+  year: string;
+  image: string;
+  featuredPerson?: string;
+  badge?: string;
+}
+
 export interface AtelierMetrics {
   monthlyRevenue: number;
   monthlyBookings: number;

@@ -55,4 +55,8 @@ declare module 'lucide-react' {
   export const MapPin: LucideIcon;
   export const Star: LucideIcon;
   export const RotateCcw: LucideIcon;
+  export const Award: LucideIcon;
+  export const Save: LucideIcon;
+  export const MoveUp: LucideIcon;
+  export const MoveDown: LucideIcon;
 }

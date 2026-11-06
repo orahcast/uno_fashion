@@ -51,4 +51,10 @@ declare module 'lucide-react' {
   export const Minus: LucideIcon;
   export const MessageCircle: LucideIcon;
   export const Instagram: LucideIcon;
+  export const Award: LucideIcon;
+  export const Star: LucideIcon;
+  export const Save: LucideIcon;
+  export const RotateCcw: LucideIcon;
+  export const MoveUp: LucideIcon;
+  export const MoveDown: LucideIcon;
 }

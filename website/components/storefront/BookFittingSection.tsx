@@ -23,8 +23,8 @@ export default function ContactSection() {
     {
       icon: Phone,
       label: 'Phone Number',
-      value: '+250 780 791 292',
-      href: 'tel:+250780791292',
+      value: '+250 783 036 628',
+      href: 'tel:+250783036628',
     },
     {
       icon: Mail,

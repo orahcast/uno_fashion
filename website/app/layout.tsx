@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
+import WhatsAppFloat from '@/components/storefront/WhatsAppFloat';
 
 export const metadata: Metadata = {
   title: 'UNO FASHION AGENCY | Tailoring With Quiet Authority · Kigali Rentals',
@@ -28,6 +29,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-grow">{children}</main>
         <Footer />
+        <WhatsAppFloat />
       </body>
     </html>
   );

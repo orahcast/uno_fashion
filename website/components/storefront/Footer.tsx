@@ -3,31 +3,9 @@ import { ArrowUpRight } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer id="contact" className="bg-[#14100E] text-[#FAF8F5] pt-16 pb-12 border-t border-[#2A221D]">
-      {/* Upper reassurance banner */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 border-b border-[#2A221D]">
-        <div className="flex flex-wrap items-center justify-between gap-6 text-xs text-[#B2A89F] uppercase tracking-wider">
-          <span className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C4A47C]" />
-            <span>Fitting included</span>
-          </span>
-          <span className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C4A47C]" />
-            <span>Eco dry cleaning included</span>
-          </span>
-          <span className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C4A47C]" />
-            <span>4-day rental standard</span>
-          </span>
-          <span className="flex items-center space-x-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C4A47C]" />
-            <span>Transparent refundable deposits</span>
-          </span>
-        </div>
-      </div>
-
+    <footer className="bg-[#14100E] text-[#FAF8F5] py-16 border-t border-[#2A221D]">
       {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
@@ -58,7 +36,7 @@ export default function Footer() {
             </span>
             <div className="text-xs text-[#B8ADA2] space-y-2">
               <p>concierge@unofashion.rw</p>
-              <p>+250 78 830 0000</p>
+              <p>+250 783 036 628</p>
               <div className="flex items-center space-x-4 pt-1">
                 <a
                   href="https://instagram.com"
@@ -70,7 +48,7 @@ export default function Footer() {
                   <ArrowUpRight className="w-3 h-3" />
                 </a>
                 <a
-                  href="https://wa.me/250788300000"
+                  href="https://wa.me/250783036628"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center space-x-1 hover:text-white transition-colors"

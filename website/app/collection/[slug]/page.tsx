@@ -37,7 +37,7 @@ export default function ItemDetailPage({
   const [firstName, setFirstName] = useState('Amelia');
   const [lastName, setLastName] = useState('Bennett');
   const [email, setEmail] = useState('amelia.bennett@email.com');
-  const [phone, setPhone] = useState('+250 78 000 0000');
+  const [phone, setPhone] = useState('+250 783 036 628');
   const [agreedTerms, setAgreedTerms] = useState(true);
 
   const [bookingConfirmed, setBookingConfirmed] = useState(false);

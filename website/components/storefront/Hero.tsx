@@ -1,9 +1,9 @@
 import Image from 'next/image';
-import { Phone, Star, ChevronRight, MessageCircle } from 'lucide-react';
+import { Phone, ChevronRight } from 'lucide-react';
 
 export default function Hero() {
-  const phoneNumber = '+250 780 791 292';
-  const cleanPhone = '250780791292';
+  const phoneNumber = '+250 783 036 628';
+  const cleanPhone = '250783036628';
 
   return (
     <section className="relative w-full min-h-[600px] md:h-[88vh] md:min-h-[640px] md:max-h-[820px] bg-[#14100E] text-white flex items-center overflow-hidden">
@@ -11,23 +11,8 @@ export default function Hero() {
       <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 items-stretch">
         
         {/* Left Column: Exactly Half Width (50%) */}
-        <div className="w-full z-10 flex flex-col justify-center px-6 sm:px-10 lg:pl-16 lg:pr-10 py-16 md:py-12">
-          <div className="space-y-6 max-w-xl">
-            
-            {/* Top Review & Rating Pill Badge */}
-            <div className="inline-flex items-center space-x-2 bg-[#221C18]/80 border border-[#3D332D] backdrop-blur-xs px-3.5 py-1.5 rounded-full text-xs self-start shadow-xs">
-              <span className="font-semibold text-white">4.9</span>
-              <div className="flex items-center space-x-0.5 text-[#C4A47C]">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3 h-3 fill-current" />
-                ))}
-              </div>
-              <span className="text-[#8C8075]">·</span>
-              <span className="text-[#B8ADA2] text-[11px] font-medium">
-                500+ Atelier Reviews
-              </span>
-            </div>
-
+        <div className="w-full z-10 flex flex-col justify-center px-6 sm:px-10 lg:pl-16 lg:pr-10 py-12 md:py-8">
+          <div className="space-y-6 max-w-xl -translate-y-3 md:-translate-y-8">
             {/* Headline with Em-dash and Highlighted Word */}
             <h1 className="font-serif-luxury text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-normal uppercase tracking-tight leading-[1.08] text-white">
               TAILORING — WITH <br />
@@ -36,18 +21,25 @@ export default function Hero() {
 
             {/* Subtitle Paragraph */}
             <p className="text-xs sm:text-sm text-[#B8ADA2] font-light max-w-md leading-relaxed">
-              We provide bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.
+              Uno Fashion Agency Ltd provides bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.
             </p>
 
             {/* Dual CTAs: Pill Button + Call Us Group */}
             <div className="pt-2 flex flex-wrap items-center gap-5 sm:gap-7">
-              {/* Primary Pill Button */}
+              {/* Primary WhatsApp Pill Button */}
               <a
-                href="#contact"
-                className="inline-flex items-center space-x-2.5 bg-[#C4A47C] hover:bg-[#B3936B] text-[#14100E] pl-6 pr-3 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-md"
+                href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+                  'Hello Uno Fashion Atelier, I would like to inquire about suit rentals and styling services.'
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center space-x-2.5 bg-[#C4A47C] hover:bg-[#B3936B] text-[#14100E] pl-5 pr-3 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                <span>Book Appointment</span>
-                <span className="w-6 h-6 rounded-full bg-[#14100E]/15 flex items-center justify-center">
+                <svg className="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-5.805 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                </svg>
+                <span>WhatsApp Us</span>
+                <span className="w-5 h-5 rounded-full bg-[#14100E]/15 flex items-center justify-center">
                   <ChevronRight className="w-3.5 h-3.5 text-[#14100E]" />
                 </span>
               </a>
@@ -93,21 +85,6 @@ export default function Hero() {
           <div className="block md:hidden absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#14100E] to-transparent z-0 pointer-events-none" />
         </div>
 
-      </div>
-
-      {/* Floating WhatsApp Quick Concierge Badge */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <a
-          href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-            'Hello Uno Fashion Atelier, I would like to inquire about suit rental and fitting services.'
-          )}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-center w-11 h-11 rounded-full bg-[#1A1614] border border-[#3D332D] text-white shadow-xl hover:scale-105 transition-all"
-          title="Chat with Atelier Concierge on WhatsApp"
-        >
-          <MessageCircle className="w-5 h-5 text-[#25D366]" />
-        </a>
       </div>
     </section>
   );

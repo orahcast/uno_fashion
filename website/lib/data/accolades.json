@@ -1,0 +1,57 @@
+[
+  {
+    "id": "acc-1",
+    "title": "Kigali Fashion Week Gala",
+    "category": "Celebrity",
+    "year": "2026",
+    "image": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800",
+    "featuredPerson": "VIP Red Carpet Gala",
+    "badge": "Celebrity Red Carpet"
+  },
+  {
+    "id": "acc-2",
+    "title": "Master Sartorial Tailoring Certification",
+    "category": "Certification",
+    "year": "2025",
+    "image": "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=800",
+    "featuredPerson": "European Bespoke Guild",
+    "badge": "Certified Master Tailor"
+  },
+  {
+    "id": "acc-3",
+    "title": "East African Music Awards Fitting",
+    "category": "Celebrity",
+    "year": "2025",
+    "image": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=800",
+    "featuredPerson": "Headlining Artist Styling",
+    "badge": "Stage & Gala Wear"
+  },
+  {
+    "id": "acc-4",
+    "title": "National Protocol Styling Excellence",
+    "category": "Award",
+    "year": "2026",
+    "image": "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&q=80&w=800",
+    "featuredPerson": "Rwanda Protocol Honors",
+    "badge": "Official Recognition"
+  },
+  {
+    "id": "acc-5",
+    "title": "Pan-African Couture & Suiting Summit",
+    "category": "Press",
+    "year": "2025",
+    "image": "https://images.unsplash.com/photo-1521341057461-6eb5f40b07ab?auto=format&fit=crop&q=80&w=800",
+    "featuredPerson": "Keynote Designer Showcase",
+    "badge": "Accreditation"
+  },
+  {
+    "id": "acc-6",
+    "title": "Diplomatic Gala & State Banquet Styling",
+    "category": "Celebrity",
+    "year": "2026",
+    "image": "https://images.unsplash.com/photo-1555069519-127aadedf1ee?auto=format&fit=crop&q=80&w=800",
+    "featuredPerson": "Dignitary Black Tie",
+    "badge": "State Honors"
+  }
+]
+
