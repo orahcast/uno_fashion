@@ -1,8 +1,19 @@
-export type ItemCategory = 'Suits' | 'Bridal gowns' | 'Accessories';
+export type ItemCategory = 'Suits' | 'Bridal gowns' | 'Accessories' | 'Tuxedo' | 'Suit';
+
+export type InventorySimpleStatus = 'Available' | 'Rented' | 'Dry cleaning';
 
 export type TurnaroundStatus = 'Available' | 'Reserved' | 'Out on Rental' | 'In Cleaning/Maintenance' | 'Ready' | 'Due today';
 
-export type BookingStatus = 'Confirmed' | 'Ready' | 'Request' | 'Out on rent' | 'Due today' | 'Returned';
+export type BookingStatus =
+  | 'Confirmed'
+  | 'Ready'
+  | 'Request'
+  | 'Pending'
+  | 'Delivered'
+  | 'Completed'
+  | 'Out on rent'
+  | 'Due today'
+  | 'Returned';
 
 export type BookingType = 'Online' | 'Walk-in';
 
@@ -31,6 +42,9 @@ export interface RentalItem {
   rentalPeriodDays: number;
   images: string[];
   sizes: string[];
+  sizeRange?: string; // e.g. "36–44" or "44–52"
+  simpleStatus?: InventorySimpleStatus;
+  condition?: string;
   stockBySize: SizeStock[];
   totalStock: number;
   readyStock: number;
@@ -45,10 +59,11 @@ export interface RentalItem {
 
 export interface Booking {
   id: string;
-  bookingNumber: string; // e.g. BK-1046
+  bookingNumber: string; // e.g. #UF-1048
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerAddress?: string;
   type: BookingType;
   itemId: string;
   itemName: string;
@@ -67,6 +82,22 @@ export interface Booking {
   occasion?: string;
   notes?: string;
   createdAt: string;
+  createdTime?: string;
+}
+
+export type ClientBookStatus = 'OUT' | 'RETURNED' | 'FITTING';
+
+export interface ClientBookEntry {
+  id: string;
+  dateLogged: string;
+  timeLogged: string;
+  clientName: string;
+  telephone: string;
+  nationalId: string;
+  outfitTaken: string;
+  returnDue: string;
+  status: ClientBookStatus;
+  notes?: string;
 }
 
 export interface AccoladeItem {
@@ -89,4 +120,3 @@ export interface AtelierMetrics {
   overdueCount: number;
   refundableDepositsHeld: number;
 }
-

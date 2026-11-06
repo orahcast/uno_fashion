@@ -1,21 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
-  Calendar,
-  Shirt,
-  Users,
-  Sparkles,
+  ShoppingBag,
+  BookOpen,
+  Package,
   Award,
+  Sparkles,
   BarChart3,
-  ExternalLink,
   Settings,
   Bell,
   Search,
-  ScanLine,
+  RefreshCw,
+  ChevronRight,
+  ExternalLink,
+  LogOut,
 } from 'lucide-react';
+import { INITIAL_ITEMS, INITIAL_CLIENT_BOOK, INITIAL_BOOKINGS } from '@/lib/data/mock-catalog';
 import './globals.css';
 
 export default function AdminRootLayout({
@@ -24,21 +28,79 @@ export default function AdminRootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [globalSearch, setGlobalSearch] = useState('');
+
+  const totalPieces = INITIAL_ITEMS.reduce((sum, item) => sum + item.totalStock, 0);
+  const clientBookCount = INITIAL_CLIENT_BOOK.length;
+  const webOrdersCount = INITIAL_BOOKINGS.length;
 
   const navLinks = [
-    { label: 'Overview', href: '/', icon: LayoutDashboard },
-    { label: 'Bookings', href: '/bookings', icon: Calendar, badge: '2' },
-    { label: 'Inventory', href: '/inventory', icon: Shirt },
+    { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { label: 'Web Orders', href: '/bookings', icon: ShoppingBag, badge: String(webOrdersCount) },
+    { label: 'Client Book', href: '/customers', icon: BookOpen, badge: String(clientBookCount) },
+    { label: 'Inventory', href: '/inventory', icon: Package, badge: String(totalPieces) },
     { label: 'Accolades & VIP', href: '/accolades', icon: Award },
-    { label: 'Customers', href: '/customers', icon: Users },
     { label: 'Services', href: '/services', icon: Sparkles },
     { label: 'Reports', href: '/reports', icon: BarChart3 },
+    { label: 'Settings', href: '/settings', icon: Settings },
   ];
+
+  const getHeaderMeta = () => {
+    if (pathname === '/') {
+      return {
+        title: 'Dashboard',
+        subtitle: "Welcome back — here's your boutique overview at a glance.",
+      };
+    }
+    if (pathname.startsWith('/bookings')) {
+      return {
+        title: 'Web Orders',
+        subtitle: 'Manage online rental orders, chosen outfits and delivery statuses.',
+      };
+    }
+    if (pathname.startsWith('/customers')) {
+      return {
+        title: 'Client Book',
+        subtitle: 'Digital on-site register for walk-in boutique clients and fittings.',
+      };
+    }
+    if (pathname.startsWith('/inventory')) {
+      return {
+        title: 'Inventory',
+        subtitle: 'Manage your full rental catalog in real time.',
+      };
+    }
+    if (pathname.startsWith('/accolades')) {
+      return {
+        title: 'Celebrity Looks & Certifications',
+        subtitle: 'Manage storefront marquee honors, red carpets, and bespoke credentials.',
+      };
+    }
+    if (pathname.startsWith('/settings')) {
+      return {
+        title: 'Settings',
+        subtitle: 'Configure boutique preferences, showroom details, and integrations.',
+      };
+    }
+    return {
+      title: 'Atelier Manager',
+      subtitle: 'Uno Fashion rental & inventory central.',
+    };
+  };
+
+  const headerMeta = getHeaderMeta();
+
+  const handleGlobalSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!globalSearch.trim()) return;
+    router.push(`/inventory?q=${encodeURIComponent(globalSearch.trim())}`);
+  };
 
   return (
     <html lang="en">
       <head>
-        <title>Uno Fashion Atelier Manager · Admin PWA</title>
+        <title>Uno Fashion · Inventory Central</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -47,23 +109,28 @@ export default function AdminRootLayout({
         />
       </head>
       <body className="min-h-screen bg-[#FAF8F5] flex flex-col md:flex-row font-sans-luxury text-[#191C1A] antialiased">
-        {/* Desktop Atelier Dark Sidebar */}
-        <aside className="hidden md:flex flex-col w-64 bg-[#14100E] text-[#FAF8F5] p-6 justify-between flex-shrink-0 border-r border-[#26201B]">
-          <div className="space-y-8">
+        {/* Desktop Atelier Dark Sidebar (Retaining Uno Fashion Color Scheme) */}
+        <aside className="hidden md:flex flex-col w-64 bg-[#14100E] text-[#FAF8F5] p-5 justify-between flex-shrink-0 border-r border-[#26201B]">
+          <div className="space-y-7">
             {/* Atelier Brand */}
-            <Link href="/" className="block">
-              <span className="font-serif-luxury text-xl tracking-[0.14em] font-medium block text-white">
-                UNO FASHION
-              </span>
-              <span className="text-[9px] uppercase tracking-[0.25em] text-[#C4A47C] font-semibold block mt-0.5">
-                ATELIER MANAGER
-              </span>
+            <Link href="/" className="flex items-center space-x-3 px-2 pt-1">
+              <div className="w-9 h-9 rounded-md bg-[#C4A47C] text-[#14100E] flex items-center justify-center font-serif-luxury font-bold text-lg shadow-xs">
+                U
+              </div>
+              <div>
+                <span className="font-serif-luxury text-lg tracking-[0.1em] font-semibold block text-white leading-tight">
+                  Uno Fashion
+                </span>
+                <span className="text-[9px] uppercase tracking-[0.22em] text-[#C4A47C] font-semibold block">
+                  INVENTORY CENTRAL
+                </span>
+              </div>
             </Link>
 
             {/* Navigation Links */}
-            <nav className="space-y-1.5">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#7A7067] font-semibold block px-3 py-1">
-                Workspace
+            <nav className="space-y-1">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-[#7A7067] font-semibold block px-3 pb-2">
+                MAIN MENU
               </span>
 
               {navLinks.map((item) => {
@@ -77,90 +144,116 @@ export default function AdminRootLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center justify-between px-3 py-2.5 text-xs font-medium rounded-sm transition-colors ${
+                    className={`flex items-center justify-between px-3.5 py-2.5 text-xs font-medium rounded-md transition-all ${
                       isActive
-                        ? 'bg-[#26201C] text-white font-semibold'
+                        ? 'bg-[#26201C] text-white font-semibold border border-[#3A312A] shadow-2xs'
                         : 'text-[#B8ADA2] hover:text-white hover:bg-[#1E1916]'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Icon className="w-4 h-4" />
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-[#C4A47C]' : ''}`} />
                       <span>{item.label}</span>
                     </div>
 
-                    {item.badge && (
-                      <span className="bg-[#C4A47C] text-[#14100E] text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
+                    <div className="flex items-center space-x-1.5">
+                      {item.badge && (
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            isActive
+                              ? 'bg-[#C4A47C] text-[#14100E]'
+                              : 'bg-[#26201C] text-[#C4A47C]'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                      {isActive && <ChevronRight className="w-3.5 h-3.5 text-[#C4A47C]" />}
+                    </div>
                   </Link>
                 );
               })}
             </nav>
           </div>
 
-          {/* Bottom Actions */}
-          <div className="space-y-4 pt-6 border-t border-[#26201B]">
+          {/* Bottom User Profile & Quick Links */}
+          <div className="space-y-3 pt-5 border-t border-[#26201B]">
             <a
               href="http://localhost:3000"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-3 py-1 transition-colors"
+              className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#1E1916] transition-colors"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>View storefront (3000)</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[#C4A47C]" />
+              <span>View Storefront</span>
             </a>
 
-            <Link
-              href="/settings"
-              className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-3 py-1 transition-colors"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Settings</span>
-            </Link>
-
-            <div className="flex items-center space-x-3 px-3 pt-2">
-              <div className="w-8 h-8 rounded-full bg-[#C4A47C] text-[#14100E] text-xs font-bold flex items-center justify-center">
-                UF
+            <div className="flex items-center space-x-3 px-2.5 py-1.5">
+              <div className="w-8 h-8 rounded-full bg-[#C4A47C] text-[#14100E] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                O
               </div>
-              <div className="text-left">
-                <span className="text-xs font-medium text-white block">
-                  Uno Fashion
+              <div className="text-left min-w-0">
+                <span className="text-xs font-semibold text-white block truncate">
+                  Boutique Owner
                 </span>
-                <span className="text-[10px] text-[#8C8075] block">
-                  Atelier Director
+                <span className="text-[10px] text-[#8C8075] block truncate">
+                  owner@unofashion.rw
                 </span>
               </div>
             </div>
+
+            <Link
+              href="/login"
+              className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#1E1916] transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
+            </Link>
           </div>
         </aside>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
-          {/* Top Navbar */}
-          <header className="h-16 bg-[#FAF8F5] border-b border-[#E8E4DC] px-4 sm:px-8 flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-xs text-[#6B726A]">
-              <span>Workspace</span>
-              <span>/</span>
-              <span className="text-[#191C1A] font-medium capitalize">
-                {pathname === '/'
-                  ? 'Overview'
-                  : pathname.replace('/', '').split('/')[0]}
-              </span>
+          {/* Top Header Bar */}
+          <header className="bg-[#FAF8F5] border-b border-[#E8E4DC] px-4 sm:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="font-serif-luxury text-lg font-medium text-[#191C1A] leading-tight">
+                {headerMeta.title}
+              </h2>
+              <p className="text-[11px] text-[#6B726A]">{headerMeta.subtitle}</p>
             </div>
 
-            <div className="flex items-center space-x-6 text-xs text-[#6B726A]">
-              <span className="hidden sm:inline">Tuesday, 10 November 2026</span>
-              <button className="hover:text-[#191C1A]" aria-label="Search">
-                <Search className="w-4 h-4" />
+            <div className="flex items-center space-x-3">
+              <form onSubmit={handleGlobalSearch} className="relative w-full sm:w-72">
+                <Search className="w-3.5 h-3.5 text-[#8C8075] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.value)}
+                  placeholder="Search inventory, clients, orders..."
+                  className="w-full bg-[#F2ECE1] border border-[#E5DFD4] rounded-md pl-8 pr-3 py-1.5 text-xs text-[#191C1A] placeholder-[#8C8075] focus:outline-none focus:bg-white focus:border-[#9E7B4F] transition-colors"
+                />
+              </form>
+
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="p-2 rounded-md bg-[#F2ECE1] border border-[#E5DFD4] text-[#6B726A] hover:text-[#191C1A] transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
-              <button className="hover:text-[#191C1A] relative" aria-label="Notifications">
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C4A47C]" />
+
+              <button
+                type="button"
+                className="p-2 rounded-md bg-[#F2ECE1] border border-[#E5DFD4] text-[#6B726A] hover:text-[#191C1A] relative transition-colors"
+                title="Notifications"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#9E7B4F]" />
               </button>
-              <div className="flex items-center space-x-1.5 text-xs text-[#2D5A38] bg-[#EAF3EC] px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A38]" />
-                <span className="font-medium">Showroom open</span>
+
+              <div className="w-7 h-7 rounded-full bg-[#9E7B4F] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                O
               </div>
             </div>
           </header>
@@ -169,46 +262,25 @@ export default function AdminRootLayout({
           <main className="p-4 sm:p-8 flex-1">{children}</main>
         </div>
 
-        {/* Mobile-First PWA Bottom Navigation Bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#14100E] border-t border-[#26201B] text-[#B8ADA2] px-4 py-2 flex items-center justify-around shadow-2xl">
-          <Link
-            href="/"
-            className={`flex flex-col items-center py-1 ${
-              pathname === '/' ? 'text-white' : ''
-            }`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Overview</span>
-          </Link>
-
-          <Link
-            href="/bookings"
-            className={`flex flex-col items-center py-1 relative ${
-              pathname.startsWith('/bookings') ? 'text-white' : ''
-            }`}
-          >
-            <Calendar className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Bookings</span>
-            <span className="absolute top-0 right-2 w-2 h-2 bg-[#C4A47C] rounded-full" />
-          </Link>
-
-          <Link
-            href="/inventory"
-            className={`flex flex-col items-center py-1 ${
-              pathname.startsWith('/inventory') ? 'text-white' : ''
-            }`}
-          >
-            <Shirt className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Inventory</span>
-          </Link>
-
-          <Link
-            href="/inventory?scan=true"
-            className="flex flex-col items-center py-1 text-[#C4A47C]"
-          >
-            <ScanLine className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Scan SKU</span>
-          </Link>
+        {/* Mobile Bottom Navigation Bar */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#14100E] border-t border-[#26201B] text-[#B8ADA2] px-3 py-2 flex items-center justify-around shadow-2xl">
+          {navLinks.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center py-1 ${
+                  isActive ? 'text-[#C4A47C] font-semibold' : ''
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-[10px] mt-1">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
       </body>
     </html>

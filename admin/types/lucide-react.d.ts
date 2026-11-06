@@ -57,4 +57,12 @@ declare module 'lucide-react' {
   export const RotateCcw: LucideIcon;
   export const MoveUp: LucideIcon;
   export const MoveDown: LucideIcon;
+  export const BookOpen: LucideIcon;
+  export const Package: LucideIcon;
+  export const RefreshCw: LucideIcon;
+  export const LogOut: LucideIcon;
+  export const Pencil: LucideIcon;
+  export const CreditCard: LucideIcon;
+  export const Eye: LucideIcon;
+  export const Download: LucideIcon;
 }
