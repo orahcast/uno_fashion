@@ -1,9 +1,64 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Phone, ChevronRight } from 'lucide-react';
+
+interface HeroConfig {
+  image: string;
+  alt: string;
+  headlinePrefix: string;
+  headlineHighlight: string;
+  subtitle: string;
+}
+
+const DEFAULT_CONFIG: HeroConfig = {
+  image: '/images/landing-page-3.jpeg',
+  alt: 'Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali',
+  headlinePrefix: 'TAILORING — WITH',
+  headlineHighlight: 'QUIET AUTHORITY',
+  subtitle:
+    'Uno Fashion Agency Ltd provides bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.',
+};
 
 export default function Hero() {
   const phoneNumber = '+250 783 036 628';
   const cleanPhone = '250783036628';
+  const [config, setConfig] = useState<HeroConfig>(DEFAULT_CONFIG);
+
+  useEffect(() => {
+    // 1. Instant check from localStorage
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('uno_hero_config');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.image) {
+            setConfig((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
+    // 2. Live fetch from server API
+    fetch('/api/hero')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.image) {
+          setConfig((prev) => ({ ...prev, ...data }));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('uno_hero_config', JSON.stringify(data));
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch hero config from API:', err);
+      });
+  }, []);
+
+  const isDataUrl = config.image.startsWith('data:');
 
   return (
     <section className="relative w-full min-h-[600px] md:h-[88vh] md:min-h-[640px] md:max-h-[820px] bg-[#14100E] text-white flex items-center overflow-hidden">
@@ -15,13 +70,13 @@ export default function Hero() {
           <div className="space-y-6 max-w-xl -translate-y-3 md:-translate-y-8">
             {/* Headline with Em-dash and Highlighted Word */}
             <h1 className="font-serif-luxury text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-normal uppercase tracking-tight leading-[1.08] text-white">
-              TAILORING — WITH <br />
-              QUIET <span className="text-[#D5B895]">AUTHORITY</span>
+              {config.headlinePrefix} <br />
+              <span className="text-[#D5B895]">{config.headlineHighlight}</span>
             </h1>
 
             {/* Subtitle Paragraph */}
             <p className="text-xs sm:text-sm text-[#B8ADA2] font-light max-w-md leading-relaxed">
-              Uno Fashion Agency Ltd provides bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.
+              {config.subtitle}
             </p>
 
             {/* Dual CTAs: Pill Button + Call Us Group */}
@@ -66,16 +121,24 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Right Column: Exactly Half Width (50%) with "landing page 3" Image */}
-        <div className="w-full relative min-h-[440px] md:min-h-full h-full overflow-hidden">
-          <Image
-            src="/images/landing-page-3.jpeg"
-            alt="Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali"
-            fill
-            priority
-            className="object-cover object-top md:object-[center_15%]"
-            sizes="(max-width: 768px) 100vw, 50vw"
-          />
+        {/* Right Column: Exactly Half Width (50%) with Live Landing Hero Image */}
+        <div className="w-full relative min-h-[440px] md:min-h-full h-full overflow-hidden bg-[#14100E]">
+          {isDataUrl ? (
+            <img
+              src={config.image}
+              alt={config.alt}
+              className="w-full h-full object-cover object-top md:object-[center_15%]"
+            />
+          ) : (
+            <Image
+              src={config.image}
+              alt={config.alt}
+              fill
+              priority
+              className="object-cover object-top md:object-[center_15%]"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          )}
 
           {/* Smooth seamless blend between left dark half and right image */}
           <div className="hidden md:block absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-[#14100E] via-[#14100E]/60 to-transparent z-0 pointer-events-none" />

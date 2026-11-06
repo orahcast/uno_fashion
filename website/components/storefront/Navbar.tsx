@@ -51,6 +51,13 @@ export default function Navbar() {
             >
               Collections
             </Link>
+
+            <Link
+              href="/protocol-service"
+              className="hover:text-[#C4A47C] text-[#E8DEC8] transition-colors hidden sm:inline-block font-semibold"
+            >
+              Protocol Service
+            </Link>
           </div>
 
           {/* Center Brand Identity */}
@@ -84,82 +91,69 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Full-Screen Dropdown Menu */}
+        {/* Clean, Minimal Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <>
             {/* Backdrop Overlay */}
             <div
-              className="fixed inset-0 top-20 bg-black/70 backdrop-blur-xs z-40"
+              className="fixed inset-0 top-20 bg-black/60 backdrop-blur-xs z-40 transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
             />
 
             {/* Menu Drawer */}
-            <div className="relative z-50 border-t border-[#2C2420] bg-[#161210] px-6 py-6 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
-              <nav className="flex flex-col divide-y divide-[#2C2420]/60 text-sm font-medium tracking-wider uppercase text-[#E2D8CF]">
+            <div className="relative z-50 border-t border-[#2C2420] bg-[#14100E] px-6 py-8 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
+              <nav className="flex flex-col space-y-5">
                 <Link
                   href="/collection"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[48px] flex items-center hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors touch-manipulation"
+                  className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
                 >
-                  Collections Catalog
+                  Collections
                 </Link>
+
                 <Link
-                  href="/collection?category=suits"
+                  href="/protocol-service"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[48px] flex items-center hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors touch-manipulation"
+                  className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors flex items-center justify-between"
                 >
-                  Tailored Suits & Tuxedos
+                  <span>Protocol Service</span>
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C4A47C] bg-[#26201C] px-2 py-0.5 rounded-full border border-[#3A312A]">
+                    New
+                  </span>
                 </Link>
-                <Link
-                  href="/collection?category=gowns"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[48px] flex items-center hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors touch-manipulation"
-                >
-                  Bespoke Bridal Gowns
-                </Link>
+
                 <a
-                  href="#how-it-works"
+                  href="/#how-it-works"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[48px] flex items-center hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors touch-manipulation"
+                  className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
                 >
-                  Rental Process
+                  How It Works
                 </a>
+
                 <a
-                  href="#services"
+                  href="/#contact"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[48px] flex items-center hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors touch-manipulation"
-                >
-                  Suits & Protocol Services
-                </a>
-                <a
-                  href="#contact"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[48px] flex items-center hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors touch-manipulation"
+                  className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
                 >
                   Contact Atelier
                 </a>
               </nav>
 
-              {/* Mobile Quick Action Buttons inside drawer */}
-              <div className="pt-6 mt-4 border-t border-[#2C2420] space-y-3">
+              {/* Minimal Bottom Action */}
+              <div className="pt-8 mt-8 border-t border-[#26201B] space-y-4">
                 <a
                   href="https://wa.me/250783036628?text=Hello%20Uno%20Fashion%20Atelier,%20I%20would%20like%20to%20inquire%20about%20suit%20rentals."
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#C4A47C] text-[#14100E] rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm active:scale-98 transition-all touch-manipulation"
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#C4A47C] hover:bg-[#B3936B] text-[#14100E] rounded-full text-xs font-semibold uppercase tracking-wider transition-all shadow-sm active:scale-98"
                 >
-                  WhatsApp Concierge (+250 783 036 628)
+                  <span>WhatsApp Concierge (+250 783 036 628)</span>
                 </a>
 
-                <a
-                  href="tel:+250783036628"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#3D332D] text-white rounded-full text-xs font-medium uppercase tracking-wider active:bg-white/5 transition-all touch-manipulation"
-                >
-                  <Phone className="w-3.5 h-3.5 text-[#C4A47C]" />
-                  <span>Call Direct</span>
-                </a>
+                <p className="text-[11px] text-[#7A7067] text-center font-light">
+                  KG 14 Ave, Nyarutarama · Kigali, Rwanda
+                </p>
               </div>
             </div>
           </>

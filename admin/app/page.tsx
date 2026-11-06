@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   X,
   Upload,
+  Sparkles,
 } from 'lucide-react';
 import {
   INITIAL_ITEMS,
@@ -40,8 +41,9 @@ export default function AdminOverviewPage() {
   const [formPrice, setFormPrice] = useState('150000');
   const [formStatus, setFormStatus] = useState<InventorySimpleStatus>('Available');
   const [formImage, setFormImage] = useState<string>('');
+  const [protocolBookings, setProtocolBookings] = useState<any[]>([]);
 
-  // Sync with persisted items in localStorage
+  // Sync with persisted items in localStorage & API
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('uno_inventory_items');
@@ -55,7 +57,24 @@ export default function AdminOverviewPage() {
           console.error('Failed to parse saved inventory:', err);
         }
       }
+
+      const savedProto = localStorage.getItem('uno_protocol_bookings');
+      if (savedProto) {
+        try {
+          const parsed = JSON.parse(savedProto);
+          if (Array.isArray(parsed)) setProtocolBookings(parsed);
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
+
+    fetch('/api/protocol-bookings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) setProtocolBookings(data);
+      })
+      .catch(console.error);
   }, []);
 
   // Operational Counts
@@ -277,7 +296,50 @@ export default function AdminOverviewPage() {
           </div>
 
           <div className="space-y-3.5">
-            {INITIAL_BOOKINGS.slice(0, 4).map((booking) => (
+            {/* Protocol Service Inquiries (Highlighted with Gold Accent) */}
+            {protocolBookings.slice(0, 2).map((proto: any) => (
+              <Link
+                key={proto.id}
+                href="/bookings"
+                className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF4EB]/60 hover:bg-[#FAF4EB] border border-[#ECDCCB] transition-colors gap-3 group"
+              >
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#F2E5D4] border border-[#ECDCCB] flex items-center justify-center font-bold text-xs text-[#9E7B4F] shrink-0">
+                    <Sparkles className="w-4 h-4 text-[#9E7B4F]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-xs font-semibold text-[#2A1810] truncate">
+                        {proto.customerName}
+                      </h3>
+                      <span className="text-[9px] font-bold text-[#9E7B4F] bg-white px-1.5 py-0.5 rounded border border-[#ECDCCB]">
+                        PROTOCOL
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#8C7B6E] truncate">
+                      {proto.serviceType} · {proto.eventDate || 'Date TBD'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-bold text-[#9E7B4F] block">
+                    Inquiry
+                  </span>
+                  <span
+                    className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5 ${
+                      proto.status === 'Confirmed'
+                        ? 'bg-[#EAF3EC] text-[#2D5A38]'
+                        : 'bg-[#FEF6E7] text-[#935D15]'
+                    }`}
+                  >
+                    {proto.status}
+                  </span>
+                </div>
+              </Link>
+            ))}
+
+            {INITIAL_BOOKINGS.slice(0, 3).map((booking) => (
               <div
                 key={booking.id}
                 className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF7F2] hover:bg-[#F5EFEB] transition-colors gap-3"

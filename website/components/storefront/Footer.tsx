@@ -72,6 +72,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/protocol-service" className="hover:text-[#C4A47C] transition-colors text-white font-medium">
+                  Protocol Service
+                </Link>
+              </li>
+              <li>
                 <a href="#how-it-works" className="hover:text-white transition-colors">
                   Rental Process & Care
                 </a>

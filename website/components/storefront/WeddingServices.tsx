@@ -1,7 +1,28 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
 
+const PROTOCOL_SLIDES = [
+  { src: '/images/landing-page-1.jpeg', title: 'Wardrobe Alignment' },
+  { src: '/images/landing-page-2.jpeg', title: 'Entrance Etiquette' },
+  { src: '/images/landing-page-3.jpeg', title: 'VIP Stage Presence' },
+  { src: '/images/hero-men.jpg', title: 'Day-Of Suite Dressing' },
+];
+
 export default function WeddingServices() {
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  // Slowly cycle slides every 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % PROTOCOL_SLIDES.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
   const services = [
     {
       title: 'Suits Rental & Precision Fitting',
@@ -24,29 +45,49 @@ export default function WeddingServices() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Side: Scaled Overlapping Dual-Image Stack */}
+          {/* Left Side: Slowly Sliding Carousel Stack */}
           <div className="lg:col-span-5 relative w-full max-w-sm mx-auto lg:max-w-none">
-            <div className="relative w-full h-[360px] sm:h-[400px]">
-              {/* Back Image (Landing Page 1) - Shifted Up and Right */}
-              <div className="absolute top-0 right-1 sm:right-4 w-[68%] aspect-[3/4] rounded-xl overflow-hidden shadow-sm border-3 border-white bg-[#EFECE6]">
-                <Image
-                  src="/images/landing-page-1.jpeg"
-                  alt="Uno Fashion Agency - Wedding Protocol and Styling"
-                  fill
-                  className="object-cover object-top"
-                  sizes="(max-width: 1024px) 65vw, 30vw"
-                />
+            <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-md border-3 border-white bg-[#14100E]">
+              {/* Sliding Track */}
+              <div
+                className="flex h-full w-full transition-transform duration-1000 ease-in-out"
+                style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+              >
+                {PROTOCOL_SLIDES.map((slide, idx) => (
+                  <div key={idx} className="relative min-w-full h-full">
+                    <Image
+                      src={slide.src}
+                      alt={slide.title}
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 1024px) 100vw, 40vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <span className="text-[9px] uppercase tracking-wider text-[#D5B895] font-semibold bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-full inline-block mb-1">
+                        Protocol in Action
+                      </span>
+                      <p className="font-serif-luxury text-base font-medium">
+                        {slide.title}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* Front Image (Landing Page 2) - Shifted Down and Left overlapping */}
-              <div className="absolute bottom-0 left-1 sm:left-4 w-[68%] aspect-[3/4] rounded-xl overflow-hidden shadow-md border-3 border-white bg-[#EAE7E1] z-10">
-                <Image
-                  src="/images/landing-page-2.jpeg"
-                  alt="Uno Fashion Agency - Bespoke Suits & Tailoring"
-                  fill
-                  className="object-cover object-top"
-                  sizes="(max-width: 1024px) 65vw, 30vw"
-                />
+              {/* Slide Indicators */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-full">
+                {PROTOCOL_SLIDES.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveSlide(i)}
+                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                      activeSlide === i ? 'w-4 bg-[#C4A47C]' : 'w-1.5 bg-white/40'
+                    }`}
+                    aria-label={`Go to slide ${i + 1}`}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -58,7 +99,7 @@ export default function WeddingServices() {
                 Atelier Services
               </span>
               <h2 className="font-serif-luxury text-2xl sm:text-3xl lg:text-4xl font-normal text-[#191C1A] mt-1 leading-snug">
-                Suits & Wedding Protocol Services.
+                Suits &amp; Wedding Protocol Services.
               </h2>
               <p className="text-xs text-[#6B655E] mt-2 leading-relaxed max-w-lg font-light">
                 Two dedicated offerings in Kigali: custom-fitted luxury suit rentals for your big day, and end-to-end wedding protocol management to keep your ceremony dignified and seamless.
@@ -99,13 +140,13 @@ export default function WeddingServices() {
 
             {/* Bottom Action */}
             <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <a
-                href="#contact"
-                className="inline-flex items-center justify-center space-x-2 bg-[#191C1A] hover:bg-[#9E7B4F] text-white px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-150 shadow-xs self-start"
+              <Link
+                href="/protocol-service"
+                className="inline-flex items-center justify-center space-x-2 bg-[#191C1A] hover:bg-[#9E7B4F] text-white px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-150 shadow-xs self-start cursor-pointer"
               >
-                <span>Book Consultation & Fitting</span>
+                <span>Explore Protocol Service &amp; Book</span>
                 <ArrowRight className="w-3 h-3" />
-              </a>
+              </Link>
 
               <span className="text-[10px] text-[#8C8278]">
                 Nyarugenge Showroom · Protocol across Kigali

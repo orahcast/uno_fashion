@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -33,6 +33,27 @@ export default function AdminRootLayout({
   const router = useRouter();
   const [globalSearch, setGlobalSearch] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [protocolCount, setProtocolCount] = useState(2);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('uno_protocol_bookings');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setProtocolCount(parsed.length);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    fetch('/api/protocol-bookings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) setProtocolCount(data.length);
+      })
+      .catch(console.error);
+  }, []);
 
   const totalPieces = INITIAL_ITEMS.reduce((sum, item) => sum + item.totalStock, 0);
   const clientBookCount = INITIAL_CLIENT_BOOK.length;
@@ -41,7 +62,7 @@ export default function AdminRootLayout({
   const navLinks = [
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
     { label: 'Landing Hero', href: '/hero', icon: Sparkles },
-    { label: 'Web Orders', href: '/bookings', icon: ShoppingBag, badge: String(webOrdersCount) },
+    { label: 'Web Orders', href: '/bookings', icon: ShoppingBag, badge: String(webOrdersCount + protocolCount) },
     { label: 'Client Book', href: '/customers', icon: BookOpen, badge: String(clientBookCount) },
     { label: 'Inventory', href: '/inventory', icon: Package, badge: String(totalPieces) },
     { label: 'Accolades & VIP', href: '/accolades', icon: Award },

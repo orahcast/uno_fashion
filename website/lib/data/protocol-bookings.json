@@ -1,0 +1,15 @@
+[
+  {
+    "id": "proto-102",
+    "bookingNumber": "PR-102",
+    "customerName": "Hon. Patrick Karegeya",
+    "customerPhone": "+250 783 910 220",
+    "eventDate": "2026-12-05",
+    "serviceType": "VIP Gala & Stage Reception Protocol",
+    "partySize": "Executive Delegation (4 VIPs)",
+    "venue": "Kigali Convention Centre (KCC)",
+    "notes": "Red carpet entrance protocol and on-stage award presentation escort.",
+    "status": "Completed",
+    "createdAt": "2026-11-05T14:30:00.000Z"
+  }
+]
