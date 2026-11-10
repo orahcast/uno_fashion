@@ -3,6 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-cormorant',
+  display: 'swap',
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-plus-jakarta',
+  display: 'swap',
+});
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -128,22 +143,16 @@ export default function AdminRootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${cormorant.variable} ${plusJakarta.variable}`}>
       <head>
         <title>Uno Fashion · Inventory Central</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="min-h-screen bg-[#FAF8F5] flex flex-col lg:flex-row font-sans-luxury text-[#191C1A] antialiased">
         {/* Desktop Atelier Dark Sidebar */}
         <aside className="hidden lg:flex flex-col w-64 bg-[#14100E] text-[#FAF8F5] p-5 justify-between flex-shrink-0 border-r border-[#26201B]">
           <div className="space-y-7">
             {/* Atelier Brand */}
-            <Link href="/" className="flex items-center space-x-3 px-2 pt-1">
+            <Link href="/" prefetch={true} className="flex items-center space-x-3 px-2 pt-1">
               <div className="w-9 h-9 rounded-md bg-[#C4A47C] text-[#14100E] flex items-center justify-center font-serif-luxury font-bold text-lg shadow-xs">
                 U
               </div>
@@ -174,6 +183,7 @@ export default function AdminRootLayout({
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     className={`flex items-center justify-between px-3.5 py-2.5 text-xs font-medium rounded-md transition-all ${
                       isActive
                         ? 'bg-[#26201C] text-white font-semibold border border-[#3A312A] shadow-2xs'
@@ -300,6 +310,7 @@ export default function AdminRootLayout({
                       <Link
                         key={item.href}
                         href={item.href}
+                        prefetch={true}
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center justify-between px-3.5 py-3 text-xs font-medium rounded-lg transition-all touch-manipulation ${
                           isActive

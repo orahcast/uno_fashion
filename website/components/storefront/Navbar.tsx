@@ -47,6 +47,7 @@ export default function Navbar() {
 
             <Link
               href="/collection"
+              prefetch={true}
               className="hover:text-white transition-colors hidden sm:inline-block"
             >
               Collections
@@ -54,6 +55,7 @@ export default function Navbar() {
 
             <Link
               href="/protocol-service"
+              prefetch={true}
               className="hover:text-[#C4A47C] text-[#E8DEC8] transition-colors hidden sm:inline-block font-semibold"
             >
               Protocol Service
@@ -61,7 +63,7 @@ export default function Navbar() {
           </div>
 
           {/* Center Brand Identity */}
-          <Link href="/" className="flex flex-col items-center group text-center select-none">
+          <Link href="/" prefetch={true} className="flex flex-col items-center group text-center select-none">
             <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.3em] text-[#C4A47C] font-semibold -mb-0.5">
               Kigali Atelier
             </span>
@@ -72,12 +74,12 @@ export default function Navbar() {
 
           {/* Right Links */}
           <div className="flex items-center space-x-3 sm:space-x-5 text-xs uppercase tracking-widest font-medium text-[#D1C7BD]">
-            <a
-              href="#contact"
+            <Link
+              href="/#contact"
               className="hover:text-white transition-colors hidden md:inline-block"
             >
               Contact Us
-            </a>
+            </Link>
 
             <a
               href="https://instagram.com"
@@ -105,6 +107,7 @@ export default function Navbar() {
               <nav className="flex flex-col space-y-5">
                 <Link
                   href="/collection"
+                  prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
                   className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
                 >
@@ -113,6 +116,7 @@ export default function Navbar() {
 
                 <Link
                   href="/protocol-service"
+                  prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
                   className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors flex items-center justify-between"
                 >
@@ -122,21 +126,21 @@ export default function Navbar() {
                   </span>
                 </Link>
 
-                <a
+                <Link
                   href="/#how-it-works"
                   onClick={() => setMobileMenuOpen(false)}
                   className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
                 >
                   How It Works
-                </a>
+                </Link>
 
-                <a
+                <Link
                   href="/#contact"
                   onClick={() => setMobileMenuOpen(false)}
                   className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
                 >
                   Contact Atelier
-                </a>
+                </Link>
               </nav>
 
               {/* Minimal Bottom Action */}
