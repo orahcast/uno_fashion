@@ -81,8 +81,6 @@ export default function AdminRootLayout({
     { label: 'Client Book', href: '/customers', icon: BookOpen, badge: String(clientBookCount) },
     { label: 'Inventory', href: '/inventory', icon: Package, badge: String(totalPieces) },
     { label: 'Accolades & VIP', href: '/accolades', icon: Award },
-    { label: 'Reports', href: '/reports', icon: BarChart3 },
-    { label: 'Settings', href: '/settings', icon: Settings },
   ];
 
   const getHeaderMeta = () => {
@@ -120,12 +118,6 @@ export default function AdminRootLayout({
       return {
         title: 'Celebrity Looks & Certifications',
         subtitle: 'Manage storefront marquee honors, red carpets, and bespoke credentials.',
-      };
-    }
-    if (pathname.startsWith('/settings')) {
-      return {
-        title: 'Settings',
-        subtitle: 'Configure boutique preferences, showroom details, and integrations.',
       };
     }
     return {
