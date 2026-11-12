@@ -6,7 +6,8 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+  supabaseUrl = supabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -27,22 +28,7 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Refresh auth session
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // If visiting /admin routes (except /admin/login), check if user is authenticated or demo mode enabled
-  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
-  if (
-    request.nextUrl.pathname.startsWith('/admin') &&
-    !request.nextUrl.pathname.startsWith('/admin/login') &&
-    !user &&
-    !isDemo
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin/login';
-    return NextResponse.redirect(url);
-  }
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }

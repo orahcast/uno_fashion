@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
+import { RentalItem } from '@/lib/types';
 import { formatRWF } from '@/lib/utils';
 import RentItemModal, { RentModalSuit } from '@/components/storefront/RentItemModal';
 
@@ -16,6 +17,18 @@ export default function CollectionPage() {
   const currentCategory = searchParams.get('category') || 'all';
   const [sortBy, setSortBy] = useState<string>('featured');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
+  const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
+
+  useEffect(() => {
+    fetch('/api/items')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setItems(data);
+        }
+      })
+      .catch((err) => console.error('Error fetching catalog items:', err));
+  }, []);
 
   const handleCategoryChange = (category: string) => {
     startTransition(() => {
@@ -30,7 +43,7 @@ export default function CollectionPage() {
   };
 
   const filteredItems = useMemo(() => {
-    return INITIAL_ITEMS.filter((item) => {
+    return items.filter((item) => {
       // Category filter
       if (currentCategory !== 'all') {
         if (currentCategory === 'suits' && item.categorySlug !== 'suits') return false;
@@ -43,7 +56,7 @@ export default function CollectionPage() {
       if (sortBy === 'price-high') return b.rentalPrice - a.rentalPrice;
       return 0;
     });
-  }, [currentCategory, sortBy]);
+  }, [items, currentCategory, sortBy]);
 
   const categories = [
     { label: 'All Pieces', value: 'all' },

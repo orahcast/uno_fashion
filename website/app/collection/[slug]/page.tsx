@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
+import { RentalItem } from '@/lib/types';
 import { formatRWF, formatLuxuryDate } from '@/lib/utils';
 
 export default function ItemDetailPage({
@@ -20,7 +21,26 @@ export default function ItemDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const resolvedParams = use(params);
-  const item = INITIAL_ITEMS.find((i) => i.slug === resolvedParams.slug) || INITIAL_ITEMS[0];
+  const [item, setItem] = useState<RentalItem>(() => {
+    return (
+      INITIAL_ITEMS.find((i) => i.slug === resolvedParams.slug) ||
+      INITIAL_ITEMS[0]
+    );
+  });
+
+  useEffect(() => {
+    fetch(`/api/items?slug=${resolvedParams.slug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setItem(data[0]);
+          if (data[0].sizes?.length > 0) {
+            setSelectedSize(data[0].sizes[0]);
+          }
+        }
+      })
+      .catch((err) => console.error('Error fetching live item details:', err));
+  }, [resolvedParams.slug]);
 
   if (!item) {
     notFound();
@@ -42,16 +62,49 @@ export default function ItemDetailPage({
 
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [generatedBookingId, setGeneratedBookingId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const totalToPay = item.rentalPrice + item.refundableDeposit;
 
-  const handleBookNow = (e: React.FormEvent) => {
+  const handleBookNow = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedTerms) return;
+    setIsSubmitting(true);
 
     const randomId = `BK-${Math.floor(1050 + Math.random() * 900)}`;
     setGeneratedBookingId(randomId);
-    setBookingConfirmed(true);
+
+    try {
+      await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingNumber: `#UF-${Math.floor(1050 + Math.random() * 900)}`,
+          customerName: `${firstName} ${lastName}`.trim(),
+          customerEmail: email.trim(),
+          customerPhone: phone.trim(),
+          itemId: item.id,
+          itemName: item.name,
+          itemSku: item.sku,
+          itemImage: item.images[0] || '',
+          size: selectedSize,
+          pickupDate,
+          returnDate,
+          rentalFee: item.rentalPrice,
+          depositFee: item.refundableDeposit,
+          totalAmount: totalToPay,
+          fittingDate: fittingEnabled ? fittingDate : null,
+          type: 'Online',
+          status: 'Request',
+          notes: `Reserved via product detail page. Fitting: ${fittingEnabled ? fittingDate : 'None'}`,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to submit booking:', err);
+    } finally {
+      setIsSubmitting(false);
+      setBookingConfirmed(true);
+    }
   };
 
   return (

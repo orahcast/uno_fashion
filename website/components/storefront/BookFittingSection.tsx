@@ -13,10 +13,33 @@ export default function ContactSection() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: formData.name.trim(),
+          customerEmail: formData.email.trim(),
+          customerPhone: formData.phone.trim(),
+          type: 'Online',
+          status: 'Request',
+          occasion: formData.service,
+          itemName: `Consultation: ${formData.service}`,
+          notes: formData.message || 'Atelier fitting inquiry from storefront',
+        }),
+      });
+    } catch (err) {
+      console.error('Fitting inquiry submission error:', err);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   const contactDetails = [
@@ -29,8 +52,8 @@ export default function ContactSection() {
     {
       icon: Mail,
       label: 'Email Address',
-      value: 'concierge@unofashion.rw',
-      href: 'mailto:concierge@unofashion.rw',
+      value: 'ufashionagency@gmail.com',
+      href: 'mailto:ufashionagency@gmail.com',
     },
     {
       icon: Clock,
@@ -206,9 +229,10 @@ export default function ContactSection() {
                   <div className="pt-1">
                     <button
                       type="submit"
-                      className="inline-flex items-center space-x-2 bg-[#191C1A] hover:bg-[#2C2724] text-white px-5 py-2.5 rounded-full text-xs font-medium uppercase tracking-wider transition-all duration-150 shadow-xs hover:shadow"
+                      disabled={isSubmitting}
+                      className="inline-flex items-center space-x-2 bg-[#191C1A] hover:bg-[#2C2724] text-white px-5 py-2.5 rounded-full text-xs font-medium uppercase tracking-wider transition-all duration-150 shadow-xs hover:shadow cursor-pointer disabled:opacity-60"
                     >
-                      <span>Send Message</span>
+                      <span>{isSubmitting ? 'Sending Request...' : 'Send Message'}</span>
                       <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
                         <ArrowUpRight className="w-2.5 h-2.5 text-white" />
                       </span>

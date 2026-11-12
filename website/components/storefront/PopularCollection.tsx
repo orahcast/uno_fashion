@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import { RentalItem } from '@/lib/types';
+import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { formatRWF } from '@/lib/utils';
 import RentItemModal, { RentModalSuit } from './RentItemModal';
 
@@ -12,108 +13,38 @@ interface PopularCollectionProps {
   items?: RentalItem[];
 }
 
-export default function PopularCollection({}: PopularCollectionProps) {
+export default function PopularCollection({ items: initialPropItems }: PopularCollectionProps) {
+  const [items, setItems] = useState<RentalItem[]>(initialPropItems || INITIAL_ITEMS);
+  const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns'>('all');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
 
-  // 10 Curated Tailored Suits ordered exactly like the reference catalog
-  const popularSuits: (RentModalSuit & { slug: string; badge: string })[] = [
-    {
-      id: 'suit-1',
-      slug: 'asymmetry-tuxedo',
-      name: 'Asymmetry Tuxedo',
-      rentalPrice: 45000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 44—54',
-    },
-    {
-      id: 'suit-2',
-      slug: 'wide-lapel-striped-suit',
-      name: 'Wide lapel striped Suit',
-      rentalPrice: 40000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 46—52',
-    },
-    {
-      id: 'suit-3',
-      slug: 'the-urban-slate',
-      name: 'The Urban Slate',
-      rentalPrice: 42000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 44—52',
-    },
-    {
-      id: 'suit-4',
-      slug: 'the-sterling-windowpane',
-      name: 'The Sterling Windowpane',
-      rentalPrice: 45000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1598808503746-f34c53b9323e?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 46—54',
-    },
-    {
-      id: 'suit-5',
-      slug: 'the-flared-tailor-suit',
-      name: 'The Flared Tailor Suit',
-      rentalPrice: 38000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 44—50',
-    },
-    {
-      id: 'suit-6',
-      slug: 'sage-double-breasted-suit',
-      name: 'Sage Double-Breasted Suit',
-      rentalPrice: 40000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 46—52',
-    },
-    {
-      id: 'suit-7',
-      slug: 'champagne-shawl-tuxedo',
-      name: 'Champagne Shawl Tuxedo',
-      rentalPrice: 48000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1521341057461-6eb5f40b07ab?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 44—54',
-    },
-    {
-      id: 'suit-8',
-      slug: 'charcoal-peak-lapel-tuxedo',
-      name: 'Charcoal Peak Lapel Tuxedo',
-      rentalPrice: 42000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 46—52',
-    },
-    {
-      id: 'suit-9',
-      slug: 'classic-ivory-peak-tuxedo',
-      name: 'Classic Ivory Peak Tuxedo',
-      rentalPrice: 45000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 44—54',
-    },
-    {
-      id: 'suit-10',
-      slug: 'the-emerald-velvet-suit',
-      name: 'The Emerald Velvet Suit',
-      rentalPrice: 50000,
-      badge: 'Rental',
-      image: 'https://images.unsplash.com/photo-1555069519-127aadedf1ee?auto=format&fit=crop&q=80&w=800',
-      sizes: 'SIZE 46—52',
-    },
-  ];
+  // Fetch live items from the database/API
+  useEffect(() => {
+    fetch('/api/items')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setItems(data);
+        }
+      })
+      .catch((err) => console.error('Error loading popular collection:', err));
+  }, []);
+
+  // Filter items based on active tab
+  const displayItems = useMemo(() => {
+    return items.filter((item) => {
+      if (item.status === 'Archived' || item.isArchived) return false;
+      if (activeTab === 'suits') return item.categorySlug === 'suits' || item.category === 'Suits';
+      if (activeTab === 'gowns') return item.categorySlug === 'gowns' || item.category === 'Bridal gowns';
+      return true;
+    });
+  }, [items, activeTab]);
 
   return (
     <section className="py-12 sm:py-16 bg-[#FAF8F5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-3 border-b border-[#EAE5DC]">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-3 border-b border-[#EAE5DC] gap-4">
           <div>
             <span className="text-[10px] uppercase tracking-[0.22em] font-semibold text-[#9E7B4F]">
               Popular Rentals
@@ -123,91 +54,129 @@ export default function PopularCollection({}: PopularCollectionProps) {
             </h2>
           </div>
 
-          <Link
-            href="/collection"
-            className="group mt-3 sm:mt-0 inline-flex items-center space-x-1.5 border border-[#191C1A] px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-[#191C1A] hover:bg-[#191C1A] hover:text-[#FAF8F5] transition-all"
-          >
-            <span>See all collection</span>
-            <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </Link>
+          {/* Category Tabs & See All Link */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center bg-[#EFEAE2] p-1 rounded-full text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab('all')}
+                className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+                  activeTab === 'all'
+                    ? 'bg-[#191C1A] text-white shadow-xs'
+                    : 'text-[#6B726A] hover:text-[#191C1A]'
+                }`}
+              >
+                All Pieces
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('suits')}
+                className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+                  activeTab === 'suits'
+                    ? 'bg-[#191C1A] text-white shadow-xs'
+                    : 'text-[#6B726A] hover:text-[#191C1A]'
+                }`}
+              >
+                Suits & Tuxedos
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('gowns')}
+                className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+                  activeTab === 'gowns'
+                    ? 'bg-[#191C1A] text-white shadow-xs'
+                    : 'text-[#6B726A] hover:text-[#191C1A]'
+                }`}
+              >
+                Bridal Gowns & Dresses
+              </button>
+            </div>
+
+            <Link
+              href="/collection"
+              className="group inline-flex items-center space-x-1.5 border border-[#191C1A] px-4 py-1.5 rounded-full text-[11px] font-medium uppercase tracking-widest text-[#191C1A] hover:bg-[#191C1A] hover:text-[#FAF8F5] transition-all"
+            >
+              <span>See all</span>
+              <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </Link>
+          </div>
         </div>
 
-        {/* 5-Column Grid with Exact Ordering and Structure from Reference */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-7">
-          {popularSuits.map((suit) => (
-            <div key={suit.id} className="group flex flex-col">
-              {/* Studio Mannequin Image Container with Curved Edges */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedSuit(suit)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedSuit(suit);
-                  }
-                }}
-                className="relative aspect-[3/4] w-full bg-[#EAE8E4] overflow-hidden block rounded-xl shadow-2xs hover:shadow-xs transition-shadow cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#9E7B4F]"
-              >
-                <Image
-                  src={suit.image}
-                  alt={suit.name}
-                  fill
-                  className="object-cover object-top group-hover:scale-104 transition-transform duration-500 ease-out"
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                />
+        {/* Dynamic Items Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-5 gap-y-8">
+          {displayItems.map((item) => {
+            const cardModalSuit: RentModalSuit = {
+              id: item.id,
+              name: item.name,
+              rentalPrice: item.rentalPrice,
+              image: item.images[0] || '/images/hero-men.jpg',
+              sizes: (item.sizes && item.sizes.length > 0) ? item.sizes.join(' · ') : 'Tailored to measure',
+            };
 
-                {/* Top-Right Pill Badge matching reference */}
-                <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[9px] font-semibold text-[#191C1A] shadow-xs pointer-events-none">
-                  {suit.badge}
-                </div>
-              </div>
+            return (
+              <div key={item.id} className="group flex flex-col">
+                {/* Image Container with Link */}
+                <div className="relative aspect-[3/4] w-full bg-[#EAE8E4] overflow-hidden rounded-xl shadow-2xs hover:shadow-md transition-all group-hover:-translate-y-0.5">
+                  <Link href={`/collection/${item.slug}`} className="block w-full h-full">
+                    <Image
+                      src={item.images[0] || '/images/hero-men.jpg'}
+                      alt={item.name}
+                      fill
+                      className="object-cover object-top group-hover:scale-104 transition-transform duration-500 ease-out"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                  </Link>
 
-              {/* Details Directly Below Image */}
-              <div className="pt-2.5 flex flex-col space-y-1">
-                {/* Suit Title */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedSuit(suit)}
-                  className="font-medium text-xs sm:text-[13px] text-[#191C1A] hover:text-[#9E7B4F] active:text-[#9E7B4F] transition-colors leading-tight line-clamp-1 text-left cursor-pointer touch-manipulation"
-                  title={suit.name}
-                >
-                  {suit.name}
-                </button>
-
-                {/* Price Line + Touch-Optimized 'Choose' Button */}
-                <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                  <div className="min-w-0">
-                    <span className="font-semibold text-xs text-[#191C1A] truncate block">
-                      {formatRWF(suit.rentalPrice)}/day
-                    </span>
+                  {/* Badge */}
+                  <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[9px] font-semibold text-[#191C1A] shadow-xs pointer-events-none">
+                    {item.badge || (item.categorySlug === 'gowns' ? 'Couture' : 'Rental')}
                   </div>
 
-                  {/* Touch-Friendly "Choose" Button - Opens Pop-up Modal */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedSuit(suit);
-                    }}
-                    className="shrink-0 min-h-[34px] px-3.5 py-1.5 bg-[#191C1A] hover:bg-[#9E7B4F] active:bg-[#9E7B4F] text-white text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider rounded-full transition-all shadow-2xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                    aria-label={`Choose ${suit.name}`}
+                  {item.category && (
+                    <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[9px] font-medium text-white pointer-events-none capitalize">
+                      {item.category}
+                    </div>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div className="pt-3 flex flex-col space-y-1">
+                  <Link
+                    href={`/collection/${item.slug}`}
+                    className="font-medium text-sm text-[#191C1A] hover:text-[#9E7B4F] transition-colors leading-tight line-clamp-1"
+                    title={item.name}
                   >
-                    Choose
-                  </button>
+                    {item.name}
+                  </Link>
+
+                  <div className="flex items-baseline justify-between pt-0.5">
+                    <span className="font-semibold text-xs sm:text-sm text-[#191C1A]">
+                      {formatRWF(item.rentalPrice)}
+                      <span className="text-[10px] text-[#7B8079] font-normal ml-0.5">/ 4 days</span>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSuit(cardModalSuit)}
+                      className="shrink-0 px-3.5 py-1 bg-[#191C1A] hover:bg-[#9E7B4F] text-white text-[10px] font-semibold uppercase tracking-wider rounded-full transition-all shadow-2xs cursor-pointer touch-manipulation active:scale-95"
+                      aria-label={`Rent ${item.name}`}
+                    >
+                      Rent
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Reassurance text */}
         <p className="text-[11px] text-[#7B8079] mt-8 text-center sm:text-left">
-          All rental suits include full 4-day reservation, complimentary private atelier fitting, and eco dry cleaning.
+          All rental pieces include complimentary private atelier fitting, 4-day reservation window, and professional garment steaming.
         </p>
       </div>
 
-      {/* Pop-up Form Modal */}
+      {/* Pop-up Rent Form Modal */}
       <RentItemModal
         suit={selectedSuit}
         onClose={() => setSelectedSuit(null)}

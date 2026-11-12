@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Uno Fashion Agency - Atelier Manager & Rentals',
     short_name: 'Uno Fashion',
     description: 'Bespoke Luxury Rental & Inventory Management Atelier in Kigali',
-    start_url: '/admin',
+    start_url: '/',
     display: 'standalone',
     background_color: '#14100E',
     theme_color: '#14100E',

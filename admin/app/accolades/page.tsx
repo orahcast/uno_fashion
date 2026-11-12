@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { AccoladeItem } from '@/lib/types';
 import { INITIAL_ACCOLADES } from '@/lib/data/mock-catalog';
+import { createClient } from '@/lib/supabase/client';
+import { convertHeicToJpeg } from '@/lib/heic-converter';
 
 export default function AccoladesAdminPage() {
   const [accolades, setAccolades] = useState<AccoladeItem[]>(INITIAL_ACCOLADES);
@@ -179,17 +181,73 @@ export default function AccoladesAdminPage() {
     }
   };
 
-  // Image upload helper (reads local file as data url)
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image upload helper (uploads to Supabase Storage with local data URL fallback)
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setFormImage(reader.result);
+      const isHeic =
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif') ||
+        file.type === 'image/heic' ||
+        file.type === 'image/heif';
+
+      let fileToUpload = file;
+      if (isHeic) {
+        try {
+          fileToUpload = await convertHeicToJpeg(file);
+        } catch (convErr: any) {
+          alert(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
+          return;
         }
-      };
-      reader.readAsDataURL(file);
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        formData.append('folder', 'accolade');
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (res.ok && json.url) {
+          setFormImage(json.url);
+          return;
+        } else {
+          throw new Error(json.error || 'Server upload failed');
+        }
+      } catch (apiErr: any) {
+        console.warn('Server upload error, attempting direct storage upload:', apiErr);
+
+        try {
+          const supabase = createClient();
+          const fileExt = fileToUpload.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const fileName = `accolade-${Date.now()}.${fileExt}`;
+          const { data, error } = await supabase.storage
+            .from('inventory-photos')
+            .upload(fileName, fileToUpload, { upsert: true });
+
+          if (!error && data) {
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from('inventory-photos').getPublicUrl(fileName);
+            setFormImage(publicUrl);
+            return;
+          }
+        } catch (err) {
+          console.warn('Storage upload fallback:', err);
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setFormImage(reader.result);
+          }
+        };
+        reader.readAsDataURL(fileToUpload);
+      }
     }
   };
 
@@ -548,7 +606,7 @@ export default function AccoladesAdminPage() {
                     <span>Upload photo from device</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.heic,.HEIC,.heif,.HEIF"
                       onChange={handleImageUpload}
                       className="hidden"
                     />

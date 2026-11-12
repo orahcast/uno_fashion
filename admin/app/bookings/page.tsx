@@ -49,8 +49,19 @@ export default function BookingsManagementPage() {
   const [newReturn, setNewReturn] = useState('2026-11-18');
   const [newAmount, setNewAmount] = useState('185000');
 
-  // Load Protocol Bookings on mount
+  // Load Orders & Protocol Bookings on mount
   useEffect(() => {
+    // 1. Fetch live suit bookings from API
+    fetch('/api/bookings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setOrders(data);
+        }
+      })
+      .catch((err) => console.error('Error fetching bookings:', err));
+
+    // 2. Fetch protocol bookings
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('uno_protocol_bookings');
       if (saved) {
@@ -127,6 +138,12 @@ export default function BookingsManagementPage() {
     setOrders((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status: nextStatus } : o))
     );
+
+    fetch('/api/bookings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: nextStatus }),
+    }).catch(console.error);
   };
 
   const handleDeleteSuit = (id: string, orderNum: string) => {
@@ -143,7 +160,7 @@ export default function BookingsManagementPage() {
       customerName: newCustomer,
       customerEmail: `${newCustomer.toLowerCase().replace(/\s+/g, '.')}@email.com`,
       customerPhone: newPhone || '+250 788 000 000',
-      type: 'Online',
+      type: 'Walk-in',
       itemId: 'item-1',
       itemName: newItem,
       itemSku: 'SU-001',
@@ -162,6 +179,12 @@ export default function BookingsManagementPage() {
     setShowNewOrderModal(false);
     setNewCustomer('');
     setNewPhone('');
+
+    fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newOrder),
+    }).catch(console.error);
   };
 
   // Actions for Protocol

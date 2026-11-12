@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
 
-const PROTOCOL_SLIDES = [
+const DEFAULT_SLIDES = [
   { src: '/images/landing-page-1.jpeg', title: 'Wardrobe Alignment' },
   { src: '/images/landing-page-2.jpeg', title: 'Entrance Etiquette' },
   { src: '/images/landing-page-3.jpeg', title: 'VIP Stage Presence' },
@@ -13,15 +13,33 @@ const PROTOCOL_SLIDES = [
 ];
 
 export default function WeddingServices() {
+  const [slides, setSlides] = useState(DEFAULT_SLIDES);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/protocol-photos')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setSlides(
+            data.map((item: { image?: string; src?: string; title: string }) => ({
+              src: item.image || item.src || '/images/landing-page-1.jpeg',
+              title: item.title,
+            }))
+          );
+        }
+      })
+      .catch((err) => console.error('Failed to load protocol photos:', err));
+  }, []);
 
   // Slowly cycle slides every 5 seconds
   useEffect(() => {
+    if (slides.length === 0) return;
     const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % PROTOCOL_SLIDES.length);
+      setActiveSlide((prev) => (prev + 1) % slides.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const services = [
     {
@@ -53,7 +71,7 @@ export default function WeddingServices() {
                 className="flex h-full w-full transition-transform duration-1000 ease-in-out"
                 style={{ transform: `translateX(-${activeSlide * 100}%)` }}
               >
-                {PROTOCOL_SLIDES.map((slide, idx) => (
+                {slides.map((slide, idx) => (
                   <div key={idx} className="relative min-w-full h-full">
                     <Image
                       src={slide.src}
@@ -77,7 +95,7 @@ export default function WeddingServices() {
 
               {/* Slide Indicators */}
               <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-full">
-                {PROTOCOL_SLIDES.map((_, i) => (
+                {slides.map((_, i) => (
                   <button
                     key={i}
                     type="button"

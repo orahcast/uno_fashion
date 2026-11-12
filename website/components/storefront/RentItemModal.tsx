@@ -25,6 +25,7 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
   const [eventDate, setEventDate] = useState('');
   const [rentalDays, setRentalDays] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Prevent background scrolling on iOS / Android when modal is open
   useEffect(() => {
@@ -41,9 +42,34 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
   const totalAmount = suit.rentalPrice * (rentalDays > 0 ? rentalDays : 1);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: fullName.trim(),
+          customerPhone: phone.trim(),
+          customerEmail: email.trim(),
+          itemId: suit.id,
+          itemName: suit.name,
+          itemImage: suit.image,
+          pickupDate: eventDate || new Date().toISOString().split('T')[0],
+          rentalFee: totalAmount,
+          totalAmount: totalAmount,
+          type: 'Online',
+          notes: `Requested for ${rentalDays} day(s). Sizes: ${suit.sizes || 'Not specified'}`,
+        }),
+      });
+    } catch (err) {
+      console.error('Booking submission error:', err);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   const handleClose = () => {
@@ -236,9 +262,10 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
               <button
                 type="submit"
-                className="flex-1 min-h-[44px] py-2.5 bg-[#191C1A] hover:bg-[#9E7B4F] active:bg-[#14100E] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors shadow-xs text-center touch-manipulation cursor-pointer"
+                disabled={isSubmitting}
+                className="flex-1 min-h-[44px] py-2.5 bg-[#191C1A] hover:bg-[#9E7B4F] active:bg-[#14100E] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors shadow-xs text-center touch-manipulation cursor-pointer disabled:opacity-60"
               >
-                Confirm
+                {isSubmitting ? 'Confirming...' : 'Confirm'}
               </button>
             </div>
           </form>

@@ -16,6 +16,8 @@ import {
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { RentalItem, SizeStock } from '@/lib/types';
 import { formatRWF } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import { convertHeicToJpeg } from '@/lib/heic-converter';
 
 export default function EditItemPage({
   params,
@@ -68,16 +70,72 @@ export default function EditItemPage({
       : existingItem.images
   );
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImages((prev) => [...prev, reader.result as string]);
+      const isHeic =
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif') ||
+        file.type === 'image/heic' ||
+        file.type === 'image/heif';
+
+      let fileToUpload = file;
+      if (isHeic) {
+        try {
+          fileToUpload = await convertHeicToJpeg(file);
+        } catch (convErr: any) {
+          alert(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
+          return;
         }
-      };
-      reader.readAsDataURL(file);
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        formData.append('folder', 'inventory');
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (res.ok && json.url) {
+          setImages((prev) => [...prev, json.url]);
+          return;
+        } else {
+          throw new Error(json.error || 'Server upload failed');
+        }
+      } catch (apiErr: any) {
+        console.warn('Server upload error, attempting direct storage upload:', apiErr);
+
+        try {
+          const supabase = createClient();
+          const fileExt = fileToUpload.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const { data, error } = await supabase.storage
+            .from('inventory-photos')
+            .upload(fileName, fileToUpload, { upsert: true });
+
+          if (!error && data) {
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from('inventory-photos').getPublicUrl(fileName);
+            setImages((prev) => [...prev, publicUrl]);
+            return;
+          }
+        } catch (uploadErr) {
+          console.warn('Storage upload fallback:', uploadErr);
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setImages((prev) => [...prev, reader.result as string]);
+          }
+        };
+        reader.readAsDataURL(fileToUpload);
+      }
     }
   };
 
@@ -109,10 +167,68 @@ export default function EditItemPage({
     setStockMatrix(updated);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Item updated successfully! Changes published to storefront.');
-    router.push('/admin/inventory');
+    setIsSaving(true);
+
+    const slug =
+      existingItem.slug ||
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+    const updatedItem: RentalItem = {
+      ...existingItem,
+      id: isNew ? `item-${Date.now()}` : existingItem.id,
+      slug,
+      name,
+      sku,
+      category,
+      color,
+      fabric,
+      description,
+      rentalPrice: Number(rentalPrice) || 0,
+      refundableDeposit: Number(refundableDeposit) || 0,
+      rentalPeriodDays: parseInt(rentalPeriod) || 4,
+      status,
+      allowOnlineBooking: onlineBooking,
+      cleaningTurnaroundDays: parseInt(cleaningDays) || 1,
+      images,
+      stockBySize: stockMatrix,
+      totalStock: totalCalculated,
+      readyStock: readyCalculated,
+      simpleStatus: readyCalculated > 0 ? 'Available' : 'Rented',
+    };
+
+    // 1. Sync localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const existing = JSON.parse(localStorage.getItem('uno_inventory_items') || '[]');
+        const nextList = isNew
+          ? [updatedItem, ...existing]
+          : existing.map((i: any) => (i.id === updatedItem.id ? updatedItem : i));
+        localStorage.setItem('uno_inventory_items', JSON.stringify(nextList));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 2. Persist to live API / Supabase
+    try {
+      await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem),
+      });
+    } catch (err) {
+      console.error('Error saving item:', err);
+    }
+
+    setIsSaving(false);
+    router.push('/inventory');
   };
 
   return (
@@ -121,7 +237,7 @@ export default function EditItemPage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E4DC] pb-4">
         <div>
           <Link
-            href="/admin/inventory"
+            href="/inventory"
             className="inline-flex items-center space-x-1.5 text-xs text-[#6B726A] hover:text-[#191C1A]"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -405,7 +521,7 @@ export default function EditItemPage({
                 <Plus className="w-5 h-5" />
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.HEIC,.heif,.HEIF"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
@@ -417,7 +533,7 @@ export default function EditItemPage({
               <span>Upload image from device</span>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.HEIC,.heif,.HEIF"
                 onChange={handleImageUpload}
                 className="hidden"
               />

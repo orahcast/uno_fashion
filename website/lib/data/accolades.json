@@ -13,7 +13,7 @@
     "title": "Master Sartorial Tailoring Certification",
     "category": "Certification",
     "year": "2025",
-    "image": "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=800",
+    "image": "https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/accolade-1794514089203.jpg",
     "featuredPerson": "European Bespoke Guild",
     "badge": "Certified Master Tailor"
   },
@@ -54,4 +54,3 @@
     "badge": "State Honors"
   }
 ]
-

@@ -32,6 +32,7 @@ import { formatRWF } from '@/lib/utils';
 
 export default function AdminOverviewPage() {
   const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
+  const [bookings, setBookings] = useState<any[]>(INITIAL_BOOKINGS);
   const [showItemModal, setShowItemModal] = useState(false);
 
   // Modal Form State
@@ -43,8 +44,24 @@ export default function AdminOverviewPage() {
   const [formImage, setFormImage] = useState<string>('');
   const [protocolBookings, setProtocolBookings] = useState<any[]>([]);
 
-  // Sync with persisted items in localStorage & API
+  // Sync with live database and persisted items
   useEffect(() => {
+    // 1. Fetch live items
+    fetch('/api/items')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setItems(data);
+      })
+      .catch(console.error);
+
+    // 2. Fetch live bookings
+    fetch('/api/bookings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setBookings(data);
+      })
+      .catch(console.error);
+
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('uno_inventory_items');
       if (saved) {
@@ -84,13 +101,13 @@ export default function AdminOverviewPage() {
   const rentedCount = items.filter((i) => i.simpleStatus === 'Rented').length;
   const cleaningCount = items.filter((i) => i.simpleStatus === 'Dry cleaning').length;
 
-  const confirmedRevenue = INITIAL_BOOKINGS.filter(
+  const confirmedRevenue = bookings.filter(
     (b) =>
       b.status === 'Confirmed' ||
       b.status === 'Delivered' ||
       b.status === 'Completed' ||
       b.status === 'Ready'
-  ).reduce((sum, b) => sum + b.rentalFee, 0);
+  ).reduce((sum, b) => sum + (b.rentalFee || 0), 0);
 
   // Image upload handler
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

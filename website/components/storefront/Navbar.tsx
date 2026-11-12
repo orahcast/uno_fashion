@@ -82,7 +82,7 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/uno_fashion_agency_ltd"
               target="_blank"
               rel="noreferrer"
               className="min-w-[44px] min-h-[44px] -mr-2.5 p-2.5 flex items-center justify-center hover:text-white transition-colors cursor-pointer touch-manipulation"

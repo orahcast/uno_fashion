@@ -37,6 +37,7 @@ import {
   X,
 } from 'lucide-react';
 import { INITIAL_ITEMS, INITIAL_CLIENT_BOOK, INITIAL_BOOKINGS } from '@/lib/data/mock-catalog';
+import { createClient } from '@/lib/supabase/client';
 import './globals.css';
 
 export default function AdminRootLayout({
@@ -70,6 +71,17 @@ export default function AdminRootLayout({
       .catch(console.error);
   }, []);
 
+  const handleSignOut = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+    router.push('/login');
+    router.refresh();
+  };
+
   const totalPieces = INITIAL_ITEMS.reduce((sum, item) => sum + item.totalStock, 0);
   const clientBookCount = INITIAL_CLIENT_BOOK.length;
   const webOrdersCount = INITIAL_BOOKINGS.length;
@@ -81,6 +93,7 @@ export default function AdminRootLayout({
     { label: 'Client Book', href: '/customers', icon: BookOpen, badge: String(clientBookCount) },
     { label: 'Inventory', href: '/inventory', icon: Package, badge: String(totalPieces) },
     { label: 'Accolades & VIP', href: '/accolades', icon: Award },
+    { label: 'Protocol Service', href: '/services', icon: Sparkles },
   ];
 
   const getHeaderMeta = () => {
@@ -118,6 +131,12 @@ export default function AdminRootLayout({
       return {
         title: 'Celebrity Looks & Certifications',
         subtitle: 'Manage storefront marquee honors, red carpets, and bespoke credentials.',
+      };
+    }
+    if (pathname.startsWith('/services')) {
+      return {
+        title: 'Protocol Service Pictures',
+        subtitle: 'Ceremonial coordination, bridal party wardrobe alignment, and day-of suite dressing for weddings and distinguished events in Kigali.',
       };
     }
     return {
@@ -221,25 +240,26 @@ export default function AdminRootLayout({
 
             <div className="flex items-center space-x-3 px-2.5 py-1.5">
               <div className="w-8 h-8 rounded-full bg-[#C4A47C] text-[#14100E] text-xs font-bold flex items-center justify-center flex-shrink-0">
-                O
+                U
               </div>
               <div className="text-left min-w-0">
                 <span className="text-xs font-semibold text-white block truncate">
                   Boutique Owner
                 </span>
                 <span className="text-[10px] text-[#8C8075] block truncate">
-                  owner@unofashion.rw
+                  ufashionagency@gmail.com
                 </span>
               </div>
             </div>
 
-            <Link
-              href="/login"
-              className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#1E1916] transition-colors"
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="w-full flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#1E1916] transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
-            </Link>
+            </button>
           </div>
         </aside>
 
@@ -346,17 +366,26 @@ export default function AdminRootLayout({
 
                 <div className="flex items-center space-x-3 px-2.5 py-1.5">
                   <div className="w-8 h-8 rounded-full bg-[#C4A47C] text-[#14100E] text-xs font-bold flex items-center justify-center flex-shrink-0">
-                    O
+                    U
                   </div>
                   <div className="text-left min-w-0">
                     <span className="text-xs font-semibold text-white block truncate">
                       Boutique Owner
                     </span>
                     <span className="text-[10px] text-[#8C8075] block truncate">
-                      owner@unofashion.rw
+                      ufashionagency@gmail.com
                     </span>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#1E1916] transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
               </div>
             </aside>
           </div>

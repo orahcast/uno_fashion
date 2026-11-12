@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { INITIAL_ACCOLADES } from '@/lib/data/mock-catalog';
+import { createClient } from '@/lib/supabase/server';
 
 const DATA_FILE = path.join(process.cwd(), '..', 'website', 'lib', 'data', 'accolades.json');
 
-function getAccolades() {
+function getLocalAccolades() {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const fileData = fs.readFileSync(DATA_FILE, 'utf-8');
@@ -17,18 +18,47 @@ function getAccolades() {
   return INITIAL_ACCOLADES;
 }
 
-function saveAccolades(data: unknown) {
+function saveLocalAccolades(data: unknown) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   } catch (error) {
-    console.error('Admin API error writing accolades:', error);
     return false;
   }
 }
 
+function isSupabaseConfigured() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return Boolean(url && !url.includes('placeholder-project'));
+}
+
 export async function GET() {
-  const data = getAccolades();
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('accolades')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const formatted = data.map((item) => ({
+          id: item.id,
+          title: item.title,
+          category: item.category,
+          year: item.year,
+          image: item.image,
+          featuredPerson: item.featured_person,
+          badge: item.badge,
+        }));
+        return NextResponse.json(formatted);
+      }
+    } catch (err) {
+      console.error('Admin Supabase accolades fetch error:', err);
+    }
+  }
+
+  const data = getLocalAccolades();
   return NextResponse.json(data);
 }
 
@@ -38,10 +68,35 @@ export async function POST(request: Request) {
     if (!Array.isArray(body)) {
       return NextResponse.json({ error: 'Payload must be an array of accolades' }, { status: 400 });
     }
-    const ok = saveAccolades(body);
-    if (!ok) {
-      return NextResponse.json({ error: 'Failed to write accolades' }, { status: 500 });
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const records = body.map((item, idx) => ({
+          id: item.id,
+          title: item.title,
+          category: item.category || 'Celebrity',
+          year: item.year || '2026',
+          image: item.image,
+          featured_person: item.featuredPerson || null,
+          badge: item.badge || null,
+          sort_order: idx + 1,
+          updated_at: new Date().toISOString(),
+        }));
+
+        const { error } = await supabase
+          .from('accolades')
+          .upsert(records, { onConflict: 'id' });
+
+        if (error) {
+          console.error('Admin Supabase accolades upsert error:', error);
+        }
+      } catch (err) {
+        console.error('Admin Supabase error saving accolades:', err);
+      }
     }
+
+    saveLocalAccolades(body);
     return NextResponse.json({ success: true, count: body.length });
   } catch (err: unknown) {
     return NextResponse.json(
@@ -50,4 +105,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

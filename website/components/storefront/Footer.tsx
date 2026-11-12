@@ -35,11 +35,15 @@ export default function Footer() {
               Direct Contact
             </span>
             <div className="text-xs text-[#B8ADA2] space-y-2">
-              <p>concierge@unofashion.rw</p>
+              <p>
+                <a href="mailto:ufashionagency@gmail.com" className="hover:text-white transition-colors">
+                  ufashionagency@gmail.com
+                </a>
+              </p>
               <p>+250 783 036 628</p>
               <div className="flex items-center space-x-4 pt-1">
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/uno_fashion_agency_ltd"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center space-x-1 hover:text-white transition-colors"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   BookOpen,
   Clock,
@@ -18,6 +18,18 @@ export default function CustomersPage() {
   const [filterTab, setFilterTab] = useState<'ALL' | ClientBookStatus>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecordModal, setShowRecordModal] = useState(false);
+
+  // Fetch client book from API on mount
+  useEffect(() => {
+    fetch('/api/client-book')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setEntries(data);
+        }
+      })
+      .catch((err) => console.error('Error fetching client book:', err));
+  }, []);
 
   // Record Form State
   const [clientName, setClientName] = useState('');
@@ -50,6 +62,12 @@ export default function CustomersPage() {
     setEntries((prev) =>
       prev.map((e) => (e.id === id ? { ...e, status: nextStatus } : e))
     );
+
+    fetch('/api/client-book', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: nextStatus }),
+    }).catch(console.error);
   };
 
   const handleRecordClient = (e: React.FormEvent) => {
@@ -74,6 +92,12 @@ export default function CustomersPage() {
     setTelephone('');
     setNationalId('');
     setOutfitTaken('');
+
+    fetch('/api/client-book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newEntry),
+    }).catch(console.error);
   };
 
   const handleExportCSV = () => {

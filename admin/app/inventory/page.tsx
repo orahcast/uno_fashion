@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { Plus, Pencil, Trash2, Search, Upload, CheckCircle2, X } from 'lucide-react';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { convertHeicToJpeg } from '@/lib/heic-converter';
 
 export default function InventoryCentralPage() {
   const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
@@ -23,8 +25,22 @@ export default function InventoryCentralPage() {
   const [formCondition, setFormCondition] = useState('—');
   const [formImage, setFormImage] = useState<string>('');
 
-  // Sync with persisted items in localStorage
+  // Sync with live database and fallback to localStorage
   useEffect(() => {
+    // 1. Fetch live from API
+    fetch('/api/items')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setItems(data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('uno_inventory_items', JSON.stringify(data));
+          }
+        }
+      })
+      .catch((err) => console.error('Error fetching inventory items:', err));
+
+    // 2. Initial load from local storage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('uno_inventory_items');
       if (saved) {
@@ -69,25 +85,95 @@ export default function InventoryCentralPage() {
       item.id === id ? { ...item, simpleStatus: newStatus } : item
     );
     persistItems(updated);
+
+    const changedItem = updated.find((i) => i.id === id);
+    if (changedItem) {
+      fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changedItem),
+      }).catch(console.error);
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
       const updated = items.filter((i) => i.id !== id);
       persistItems(updated);
+
+      fetch(`/api/items?id=${id}`, {
+        method: 'DELETE',
+      }).catch(console.error);
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setFormImage(reader.result);
+      const isHeic =
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif') ||
+        file.type === 'image/heic' ||
+        file.type === 'image/heif';
+
+      let fileToUpload = file;
+      if (isHeic) {
+        try {
+          fileToUpload = await convertHeicToJpeg(file);
+        } catch (convErr: any) {
+          alert(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
+          return;
         }
-      };
-      reader.readAsDataURL(file);
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        formData.append('folder', 'inventory');
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (res.ok && json.url) {
+          setFormImage(json.url);
+          return;
+        } else {
+          throw new Error(json.error || 'Server upload failed');
+        }
+      } catch (apiErr: any) {
+        console.warn('Server upload error, attempting direct storage upload:', apiErr);
+
+        try {
+          const supabase = createClient();
+          const fileExt = fileToUpload.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const { data, error } = await supabase.storage
+            .from('inventory-photos')
+            .upload(fileName, fileToUpload, { upsert: true });
+
+          if (!error && data) {
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from('inventory-photos').getPublicUrl(fileName);
+            setFormImage(publicUrl);
+            return;
+          }
+        } catch (uploadErr) {
+          console.warn('Storage upload fallback:', uploadErr);
+        }
+
+        // Fallback to data URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setFormImage(reader.result);
+          }
+        };
+        reader.readAsDataURL(fileToUpload);
+      }
     }
   };
 
@@ -122,21 +208,26 @@ export default function InventoryCentralPage() {
       'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200';
 
     if (editingItem) {
+      const updatedItem: RentalItem = {
+        ...editingItem,
+        name: formName,
+        images: [finalImage, ...(editingItem.images?.slice(1) || [])],
+        category: formCategory,
+        sizeRange: formSizeRange,
+        rentalPrice: Number(formPrice) || 0,
+        simpleStatus: formStatus,
+        condition: formCondition,
+      };
       const updated = items.map((item) =>
-        item.id === editingItem.id
-          ? {
-              ...item,
-              name: formName,
-              images: [finalImage, ...(item.images.slice(1))],
-              category: formCategory,
-              sizeRange: formSizeRange,
-              rentalPrice: Number(formPrice) || 0,
-              simpleStatus: formStatus,
-              condition: formCondition,
-            }
-          : item
+        item.id === editingItem.id ? updatedItem : item
       );
       persistItems(updated);
+
+      fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem),
+      }).catch(console.error);
     } else {
       const newItem: RentalItem = {
         id: `item-${Date.now()}`,
@@ -172,6 +263,12 @@ export default function InventoryCentralPage() {
         cleaningTurnaroundDays: 1,
       };
       persistItems([newItem, ...items]);
+
+      fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem),
+      }).catch(console.error);
     }
     setShowItemModal(false);
   };
@@ -425,7 +522,7 @@ export default function InventoryCentralPage() {
                           Change photo
                           <input
                             type="file"
-                            accept="image/*"
+                            accept="image/*,.heic,.HEIC,.heif,.HEIF"
                             onChange={handleImageUpload}
                             className="hidden"
                           />
@@ -450,11 +547,11 @@ export default function InventoryCentralPage() {
                       Upload garment photo
                     </span>
                     <span className="text-[10px] text-[#6B726A]">
-                      JPG, PNG, or WebP from your device
+                      JPG, PNG, WebP, or iPhone HEIC
                     </span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.heic,.HEIC,.heif,.HEIF"
                       onChange={handleImageUpload}
                       className="hidden"
                     />

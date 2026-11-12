@@ -6,7 +6,8 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+  supabaseUrl = supabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -26,21 +27,37 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
+
+  // Static files, images, icons, or API routes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('.') ||
+    pathname.startsWith('/images')
+  ) {
+    return supabaseResponse;
+  }
+
   // Refresh auth session
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If visiting /admin routes (except /admin/login), check if user is authenticated or demo mode enabled
-  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
-  if (
-    request.nextUrl.pathname.startsWith('/admin') &&
-    !request.nextUrl.pathname.startsWith('/admin/login') &&
-    !user &&
-    !isDemo
-  ) {
+  const isLoginPage = pathname === '/login' || pathname === '/admin/login';
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+  // If not authenticated and not already on login page, and not in demo mode
+  if (!user && !isLoginPage && !isDemo) {
     const url = request.nextUrl.clone();
-    url.pathname = '/admin/login';
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  // If already authenticated and on login page, redirect to dashboard root
+  if (user && isLoginPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ArrowRight, Phone, CheckCircle2 } from 'lucide-react';
 
-const PROTOCOL_PHOTOS = [
+const DEFAULT_PROTOCOL_PHOTOS = [
   {
     title: 'Wardrobe Alignment',
     caption: 'Synchronized tuxedos, cuts, and accessories for the bridal squad.',
@@ -46,11 +46,23 @@ const PROTOCOL_POINTS = [
 ];
 
 export default function ProtocolServicePage() {
+  const [photos, setPhotos] = useState(DEFAULT_PROTOCOL_PHOTOS);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
   const [details, setDetails] = useState('');
   const [isSent, setIsSent] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/protocol-photos')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPhotos(data);
+        }
+      })
+      .catch((err) => console.error('Failed to load protocol photos:', err));
+  }, []);
 
   const cleanPhone = '250783036628';
 
@@ -130,7 +142,7 @@ export default function ProtocolServicePage() {
           className="flex animate-marquee gap-4 sm:gap-5 py-2 hover:[animation-play-state:paused]"
           style={{ animationDuration: '40s' }}
         >
-          {[...PROTOCOL_PHOTOS, ...PROTOCOL_PHOTOS].map((item, idx) => (
+          {[...photos, ...photos].map((item, idx) => (
             <div
               key={idx}
               className="w-60 sm:w-72 shrink-0 group bg-white rounded-2xl overflow-hidden border border-[#EAE5DC] shadow-2xs hover:border-[#9E7B4F] transition-all"

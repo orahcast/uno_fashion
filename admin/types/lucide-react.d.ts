@@ -65,4 +65,5 @@ declare module 'lucide-react' {
   export const CreditCard: LucideIcon;
   export const Eye: LucideIcon;
   export const Download: LucideIcon;
+  export const AlertCircle: LucideIcon;
 }

@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Eye,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { convertHeicToJpeg } from '@/lib/heic-converter';
 
 interface HeroConfig {
   image: string;
@@ -106,17 +108,82 @@ export default function HeroLandingManagerPage() {
   };
 
   // Upload image from phone or laptop
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setSelectedImage(reader.result);
-          showToast('Photo selected! Click "Save & Publish" to update website.');
+      const isHeic =
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif') ||
+        file.type === 'image/heic' ||
+        file.type === 'image/heif';
+
+      let fileToUpload = file;
+      if (isHeic) {
+        showToast('Converting iPhone HEIC to JPEG...');
+        try {
+          fileToUpload = await convertHeicToJpeg(file);
+        } catch (convErr: any) {
+          showToast(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
+          return;
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        showToast('Uploading hero photo...');
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        formData.append('folder', 'hero');
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (res.ok && json.url) {
+          setSelectedImage(json.url);
+          showToast(
+            isHeic
+              ? 'HEIC converted & uploaded! Click "Save & Publish" to update website.'
+              : 'Photo uploaded to Supabase Storage! Click "Save & Publish" to update website.'
+          );
+          return;
+        } else {
+          throw new Error(json.error || 'Server upload failed');
+        }
+      } catch (apiErr: any) {
+        console.warn('Server upload error, attempting direct client storage upload:', apiErr);
+
+        try {
+          const supabase = createClient();
+          const fileExt = fileToUpload.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const fileName = `hero-${Date.now()}.${fileExt}`;
+          const { data, error } = await supabase.storage
+            .from('inventory-photos')
+            .upload(fileName, fileToUpload, { upsert: true });
+
+          if (!error && data) {
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from('inventory-photos').getPublicUrl(fileName);
+            setSelectedImage(publicUrl);
+            showToast('Photo uploaded to Supabase Storage! Click "Save & Publish" to update website.');
+            return;
+          }
+        } catch (clientErr) {
+          console.warn('Storage upload fallback:', clientErr);
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setSelectedImage(reader.result);
+            showToast('Photo selected! Click "Save & Publish" to update website.');
+          }
+        };
+        reader.readAsDataURL(fileToUpload);
+      }
     }
   };
 
@@ -227,12 +294,12 @@ export default function HeroLandingManagerPage() {
                     Upload photo from phone or computer
                   </p>
                   <p className="text-[10px] text-[#8C7B6E]">
-                    JPG, PNG, or WebP photoshoot image
+                    JPG, PNG, WebP, or iPhone HEIC photoshoot image
                   </p>
                 </div>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.HEIC,.heif,.HEIF"
                   onChange={handleUpload}
                   className="hidden"
                 />
