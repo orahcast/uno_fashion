@@ -392,7 +392,7 @@ export default function AdminRootLayout({
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 pb-8">
+        <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
           {/* Top Header Bar */}
           <header className="bg-[#FAF8F5] border-b border-[#E8E4DC] px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
@@ -453,6 +453,47 @@ export default function AdminRootLayout({
           {/* Page Children */}
           <main className="p-4 sm:p-8 flex-1">{children}</main>
         </div>
+
+        {/* Mobile PWA Bottom Navigation Bar (visible only on mobile/tablet screens < lg) */}
+        <nav
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#161210]/95 backdrop-blur-md border-t border-[#2C2420] px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom"
+          aria-label="Mobile Bottom Navigation"
+        >
+          {[
+            { label: 'Overview', href: '/', icon: LayoutDashboard },
+            { label: 'Orders', href: '/bookings', icon: ShoppingBag, badge: webOrdersCount + protocolCount },
+            { label: 'Suits', href: '/inventory', icon: Package, badge: totalPieces },
+            { label: 'Protocol', href: '/services', icon: Sparkles },
+            { label: 'Clients', href: '/customers', icon: BookOpen },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              item.href === '/'
+                ? pathname === '/'
+                : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={true}
+                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-medium transition-all relative min-w-[56px] ${
+                  isActive ? 'text-[#C4A47C] font-semibold' : 'text-[#8C8075] hover:text-[#D1C7BD]'
+                }`}
+              >
+                <div className="relative">
+                  <Icon className="w-5 h-5 mb-0.5" />
+                  {Boolean(item.badge && item.badge > 0) && (
+                    <span className="absolute -top-1 -right-2 bg-[#C4A47C] text-[#14100E] text-[9px] font-bold px-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center leading-none">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </body>
     </html>
   );
