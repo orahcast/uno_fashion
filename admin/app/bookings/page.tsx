@@ -29,8 +29,9 @@ export interface ProtocolBooking {
 }
 
 export default function BookingsManagementPage() {
-  const [orders, setOrders] = useState<Booking[]>(INITIAL_BOOKINGS);
+  const [orders, setOrders] = useState<Booking[]>([]);
   const [protocolBookings, setProtocolBookings] = useState<ProtocolBooking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Distinct separated tabs: 'suits' vs 'protocol'
   const [activeTab, setActiveTab] = useState<'suits' | 'protocol'>('suits');
@@ -55,11 +56,15 @@ export default function BookingsManagementPage() {
     fetch('/api/bookings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setOrders(data);
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_booking_ids') || '[]')
+            : [];
+          setOrders(data.filter((b: Booking) => !deleted.includes(b.id)));
         }
       })
-      .catch((err) => console.error('Error fetching bookings:', err));
+      .catch((err) => console.error('Error fetching bookings:', err))
+      .finally(() => setIsLoading(false));
 
     // 2. Fetch protocol bookings
     if (typeof window !== 'undefined') {
@@ -146,9 +151,31 @@ export default function BookingsManagementPage() {
     }).catch(console.error);
   };
 
-  const handleDeleteSuit = (id: string, orderNum: string) => {
-    if (confirm(`Delete suit order ${orderNum}?`)) {
+  const handleDeleteSuit = async (id: string, orderNum: string) => {
+    if (confirm(`Delete suit order ${orderNum}? This will remove it permanently from the database.`)) {
       setOrders((prev) => prev.filter((o) => o.id !== id));
+      if (typeof window !== 'undefined') {
+        try {
+          const deleted = JSON.parse(localStorage.getItem('uno_deleted_booking_ids') || '[]');
+          if (!deleted.includes(id)) {
+            deleted.push(id);
+            localStorage.setItem('uno_deleted_booking_ids', JSON.stringify(deleted));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      try {
+        const res = await fetch(`/api/bookings?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error('Failed to delete booking from database:', errData);
+        }
+      } catch (err) {
+        console.error('Network error deleting booking:', err);
+      }
     }
   };
 
@@ -206,14 +233,21 @@ export default function BookingsManagementPage() {
     }).catch(console.error);
   };
 
-  const handleDeleteProtocol = (id: string, bookingNum: string) => {
-    if (confirm(`Delete protocol booking ${bookingNum}?`)) {
+  const handleDeleteProtocol = async (id: string, bookingNum: string) => {
+    if (confirm(`Delete protocol booking ${bookingNum}? This will remove it permanently.`)) {
       const updated = protocolBookings.filter((p) => p.id !== id);
       setProtocolBookings(updated);
       if (typeof window !== 'undefined') {
         localStorage.setItem('uno_protocol_bookings', JSON.stringify(updated));
       }
-      fetch(`/api/protocol-bookings?id=${id}`, { method: 'DELETE' }).catch(console.error);
+      try {
+        const res = await fetch(`/api/protocol-bookings?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (!res.ok) {
+          console.error('Failed to delete protocol booking:', await res.json().catch(() => ({})));
+        }
+      } catch (err) {
+        console.error('Network error deleting protocol booking:', err);
+      }
     }
   };
 
@@ -411,10 +445,16 @@ export default function BookingsManagementPage() {
           <tbody>
             {/* SUITS ORDERS */}
             {activeTab === 'suits' &&
-              (filteredSuits.length === 0 ? (
+              (isLoading ? (
                 <tr>
                   <td colSpan={7} className="bg-white rounded-xl border border-[#E8E4DC] p-12 text-center text-xs text-[#8C8075]">
-                    No suit orders found matching your search.
+                    Loading orders...
+                  </td>
+                </tr>
+              ) : filteredSuits.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="bg-white rounded-xl border border-[#E8E4DC] p-12 text-center text-xs text-[#8C8075]">
+                    No suit orders found.
                   </td>
                 </tr>
               ) : (

@@ -67,6 +67,30 @@ export async function POST(request: Request) {
     const bookingId = body.id || `bk-${Date.now().toString().slice(-4)}`;
     const bookingNumber = body.bookingNumber || `#UF-${Math.floor(1050 + Math.random() * 900)}`;
 
+    const pickupDate = body.pickupDate || new Date().toISOString().split('T')[0];
+    let returnDate = body.returnDate;
+    if (!returnDate || returnDate < pickupDate) {
+      const pTime = new Date(pickupDate + 'T00:00:00').getTime();
+      returnDate = new Date(pTime + 4 * 86400000).toISOString().split('T')[0];
+    }
+
+    let validItemId: string | null = null;
+    if (body.itemId && isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { data: itemMatch } = await supabase
+          .from('items')
+          .select('id')
+          .eq('id', body.itemId)
+          .maybeSingle();
+        if (itemMatch) {
+          validItemId = itemMatch.id;
+        }
+      } catch (err) {
+        console.error('Item validation error in Supabase:', err);
+      }
+    }
+
     const newBooking = {
       id: bookingId,
       booking_number: bookingNumber,
@@ -75,15 +99,13 @@ export async function POST(request: Request) {
       customer_phone: body.customerPhone,
       customer_address: body.customerAddress || '',
       type: body.type || 'Walk-in',
-      item_id: body.itemId || null,
+      item_id: validItemId,
       item_name: body.itemName || 'Custom Tailored Piece',
       item_sku: body.itemSku || '',
       item_image: body.itemImage || null,
       size: body.size || '',
-      pickup_date: body.pickupDate || new Date().toISOString().split('T')[0],
-      return_date:
-        body.returnDate ||
-        new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+      pickup_date: pickupDate,
+      return_date: returnDate,
       rental_fee: Number(body.rentalFee || 0),
       deposit_fee: Number(body.depositFee || 0),
       total_amount: Number(body.totalAmount || body.rentalFee || 0),
@@ -166,4 +188,42 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id query param is required' }, { status: 400 });
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { error } = await supabase
+          .from('bookings')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('Admin Supabase booking delete error:', error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, id });
+      } catch (err) {
+        console.error('Admin Supabase error deleting booking:', err);
+      }
+    }
+
+    return NextResponse.json({ success: true, id });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid request' },
+      { status: 500 }
+    );
+  }
+}
+
 

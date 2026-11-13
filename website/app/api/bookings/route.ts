@@ -9,7 +9,7 @@ function isSupabaseConfigured() {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -74,8 +74,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const bookingId = body.id || `bk-${Date.now().toString().slice(-4)}`;
-    const bookingNumber = body.bookingNumber || `#UF-${Math.floor(1050 + Math.random() * 900)}`;
+    const bookingId = body.id || `bk-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const bookingNumber = body.bookingNumber || `#UF-${Math.floor(1050 + Math.random() * 8900)}`;
+
+    const pickupDate = body.pickupDate || new Date().toISOString().split('T')[0];
+    let returnDate = body.returnDate;
+    if (!returnDate || returnDate < pickupDate) {
+      const pTime = new Date(pickupDate + 'T00:00:00').getTime();
+      returnDate = new Date(pTime + 4 * 86400000).toISOString().split('T')[0];
+    }
+
+    let validItemId: string | null = null;
+    if (body.itemId && isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { data: itemMatch } = await supabase
+          .from('items')
+          .select('id')
+          .eq('id', body.itemId)
+          .maybeSingle();
+        if (itemMatch) {
+          validItemId = itemMatch.id;
+        }
+      } catch (err) {
+        console.error('Item validation error in Supabase:', err);
+      }
+    }
 
     const newBooking = {
       id: bookingId,
@@ -85,15 +109,13 @@ export async function POST(request: Request) {
       customer_phone: body.customerPhone,
       customer_address: body.customerAddress || '',
       type: body.type || 'Online',
-      item_id: body.itemId || null,
+      item_id: validItemId,
       item_name: body.itemName || 'Custom Tailored Piece',
       item_sku: body.itemSku || '',
       item_image: body.itemImage || null,
       size: body.size || '',
-      pickup_date: body.pickupDate || new Date().toISOString().split('T')[0],
-      return_date:
-        body.returnDate ||
-        new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+      pickup_date: pickupDate,
+      return_date: returnDate,
       rental_fee: Number(body.rentalFee || 0),
       deposit_fee: Number(body.depositFee || 0),
       total_amount: Number(body.totalAmount || body.rentalFee || 0),
@@ -118,6 +140,18 @@ export async function POST(request: Request) {
 
         if (error) {
           console.error('Supabase booking insert error:', error);
+          // If insert fails due to foreign key or other constraint on item_id, retry with item_id null
+          if (newBooking.item_id !== null) {
+            const fallbackBooking = { ...newBooking, item_id: null };
+            const { data: retryData, error: retryError } = await supabase
+              .from('bookings')
+              .insert(fallbackBooking)
+              .select()
+              .single();
+            if (!retryError && retryData) {
+              return NextResponse.json({ success: true, booking: retryData }, { headers: CORS_HEADERS });
+            }
+          }
           return NextResponse.json(
             { error: error.message },
             { status: 500, headers: CORS_HEADERS }
@@ -139,3 +173,39 @@ export async function POST(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400, headers: CORS_HEADERS });
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { error } = await supabase
+          .from('bookings')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('Supabase booking delete error:', error);
+          return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
+        }
+
+        return NextResponse.json({ success: true, deleted: id }, { headers: CORS_HEADERS });
+      } catch (err) {
+        console.error('Supabase error deleting booking:', err);
+      }
+    }
+
+    return NextResponse.json({ success: true, deleted: id }, { headers: CORS_HEADERS });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid request' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}

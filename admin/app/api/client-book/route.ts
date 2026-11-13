@@ -16,7 +16,7 @@ export async function GET() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const mapped = data.map((b) => ({
           id: b.id,
           dateLogged: b.date_logged,
@@ -128,4 +128,42 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id query param is required' }, { status: 400 });
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { error } = await supabase
+          .from('client_book')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('Admin Supabase client_book delete error:', error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, id });
+      } catch (err) {
+        console.error('Admin Supabase error deleting client_book:', err);
+      }
+    }
+
+    return NextResponse.json({ success: true, id });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid request' },
+      { status: 500 }
+    );
+  }
+}
+
 

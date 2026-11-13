@@ -25,7 +25,7 @@ export default function HowItWorks() {
     {
       num: '03',
       title: 'Wear & Celebrate',
-      description: 'Enjoy your 4-day rental pressed and ready.',
+      description: 'Enjoy your rental pressed and ready for your event.',
       icon: ShoppingBag,
       bg: 'bg-[#F0F4FA]',
       border: 'border-[#D6E3F2]',

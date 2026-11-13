@@ -152,7 +152,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
                   <div className="flex items-baseline justify-between pt-0.5">
                     <span className="font-semibold text-xs sm:text-sm text-[#191C1A]">
                       {formatRWF(item.rentalPrice)}
-                      <span className="text-[10px] text-[#7B8079] font-normal ml-0.5">/ 4 days</span>
+                      <span className="text-[10px] text-[#7B8079] font-normal ml-0.5">/ day</span>
                     </span>
 
                     <button
@@ -172,7 +172,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
 
         {/* Reassurance text */}
         <p className="text-[11px] text-[#7B8079] mt-8 text-center sm:text-left">
-          All rental pieces include complimentary private atelier fitting, 4-day reservation window, and professional garment steaming.
+          All rental pieces include complimentary private atelier fitting, flexible daily rental options, and professional garment steaming.
         </p>
       </div>
 

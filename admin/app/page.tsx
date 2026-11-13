@@ -20,19 +20,14 @@ import {
   Upload,
   Sparkles,
 } from 'lucide-react';
-import {
-  INITIAL_ITEMS,
-  INITIAL_BOOKINGS,
-  INITIAL_CLIENT_BOOK,
-  ATELIER_TIMELINE,
-  INITIAL_METRICS,
-} from '@/lib/data/mock-catalog';
 import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
 import { formatRWF } from '@/lib/utils';
 
 export default function AdminOverviewPage() {
-  const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
-  const [bookings, setBookings] = useState<any[]>(INITIAL_BOOKINGS);
+  const [items, setItems] = useState<RentalItem[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [clientBook, setClientBook] = useState<any[]>([]);
+  const [protocolBookings, setProtocolBookings] = useState<any[]>([]);
   const [showItemModal, setShowItemModal] = useState(false);
 
   // Modal Form State
@@ -42,7 +37,6 @@ export default function AdminOverviewPage() {
   const [formPrice, setFormPrice] = useState('150000');
   const [formStatus, setFormStatus] = useState<InventorySimpleStatus>('Available');
   const [formImage, setFormImage] = useState<string>('');
-  const [protocolBookings, setProtocolBookings] = useState<any[]>([]);
 
   // Sync with live database and persisted items
   useEffect(() => {
@@ -50,7 +44,7 @@ export default function AdminOverviewPage() {
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) setItems(data);
+        if (Array.isArray(data)) setItems(data);
       })
       .catch(console.error);
 
@@ -58,7 +52,25 @@ export default function AdminOverviewPage() {
     fetch('/api/bookings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) setBookings(data);
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_booking_ids') || '[]')
+            : [];
+          setBookings(data.filter((b: any) => !deleted.includes(b.id)));
+        }
+      })
+      .catch(console.error);
+
+    // 3. Fetch client book
+    fetch('/api/client-book')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_client_book_ids') || '[]')
+            : [];
+          setClientBook(data.filter((e: any) => !deleted.includes(e.id)));
+        }
       })
       .catch(console.error);
 
@@ -307,7 +319,7 @@ export default function AdminOverviewPage() {
               href="/bookings"
               className="text-xs font-semibold text-[#E66826] hover:underline inline-flex items-center gap-1"
             >
-              <span>View all ({INITIAL_BOOKINGS.length})</span>
+              <span>View all ({bookings.length + protocolBookings.length})</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -356,7 +368,7 @@ export default function AdminOverviewPage() {
               </Link>
             ))}
 
-            {INITIAL_BOOKINGS.slice(0, 3).map((booking) => (
+            {bookings.slice(0, 3).map((booking: any) => (
               <div
                 key={booking.id}
                 className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF7F2] hover:bg-[#F5EFEB] transition-colors gap-3"
@@ -370,14 +382,14 @@ export default function AdminOverviewPage() {
                       {booking.itemName}
                     </h3>
                     <p className="text-[11px] text-[#8C7B6E] truncate">
-                      {booking.customerName} · {booking.size}
+                      {booking.customerName} {booking.size ? `· ${booking.size}` : ''}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right shrink-0">
                   <span className="text-xs font-bold text-[#2A1810] block">
-                    {formatRWF(booking.rentalFee)}
+                    {formatRWF(booking.totalAmount || booking.rentalFee || 0)}
                   </span>
                   <span
                     className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5 ${
@@ -393,6 +405,12 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
             ))}
+
+            {bookings.length === 0 && protocolBookings.length === 0 && (
+              <div className="p-6 text-center text-xs text-[#8C7B6E] bg-[#FAF7F2] rounded-2xl border border-[#EFEAE4]">
+                No web orders recorded yet.
+              </div>
+            )}
           </div>
         </div>
 
@@ -407,20 +425,20 @@ export default function AdminOverviewPage() {
               href="/customers"
               className="text-xs font-semibold text-[#E66826] hover:underline inline-flex items-center gap-1"
             >
-              <span>Client book ({INITIAL_CLIENT_BOOK.length})</span>
+              <span>Client book ({clientBook.length})</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           <div className="space-y-3.5">
-            {INITIAL_CLIENT_BOOK.slice(0, 4).map((entry) => (
+            {clientBook.slice(0, 4).map((entry: any) => (
               <div
                 key={entry.id}
                 className="flex items-center justify-between p-3 rounded-2xl bg-[#FAF7F2] hover:bg-[#F5EFEB] transition-colors gap-3"
               >
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-white border border-[#E8E0D5] flex items-center justify-center font-bold text-xs text-[#4A2311] shrink-0">
-                    {entry.clientName.charAt(0)}
+                    {(entry.clientName || 'C').charAt(0)}
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-xs font-semibold text-[#2A1810] truncate">
@@ -450,6 +468,12 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
             ))}
+
+            {clientBook.length === 0 && (
+              <div className="p-6 text-center text-xs text-[#8C7B6E] bg-[#FAF7F2] rounded-2xl border border-[#EFEAE4]">
+                No walk-in clients logged yet.
+              </div>
+            )}
           </div>
         </div>
       </div>

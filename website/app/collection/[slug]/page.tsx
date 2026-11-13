@@ -227,7 +227,7 @@ export default function ItemDetailPage({
                 {formatRWF(item.rentalPrice)}
               </span>
               <span className="text-xs text-[#6B726A]">
-                / 4-day rental · fitting & cleaning included
+                / per day · fitting & cleaning included
               </span>
             </div>
 

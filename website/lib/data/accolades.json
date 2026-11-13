@@ -43,14 +43,5 @@
     "image": "https://images.unsplash.com/photo-1521341057461-6eb5f40b07ab?auto=format&fit=crop&q=80&w=800",
     "featuredPerson": "Keynote Designer Showcase",
     "badge": "Accreditation"
-  },
-  {
-    "id": "acc-6",
-    "title": "Diplomatic Gala & State Banquet Styling",
-    "category": "Celebrity",
-    "year": "2026",
-    "image": "https://images.unsplash.com/photo-1555069519-127aadedf1ee?auto=format&fit=crop&q=80&w=800",
-    "featuredPerson": "Dignitary Black Tie",
-    "badge": "State Honors"
   }
 ]

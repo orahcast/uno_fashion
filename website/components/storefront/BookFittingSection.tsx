@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Phone, Mail, Clock, MapPin, ArrowUpRight, Sparkles, Check } from 'lucide-react';
+import { Phone, Mail, Clock, MapPin, ArrowUpRight, Sparkles, Check, MessageCircle } from 'lucide-react';
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -14,10 +14,23 @@ export default function ContactSection() {
 
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const waText = `Hello Uno Fashion Atelier,
+
+I am reaching out via your website "Get In Touch" form:
+• *Name:* ${formData.name.trim()}
+• *Phone:* ${formData.phone.trim()}
+• *Email:* ${formData.email.trim()}
+• *Service:* ${formData.service}
+• *Message:* ${formData.message.trim() || 'I would like to consult with the atelier.'}`;
+
+    const waUrl = `https://wa.me/250783036628?text=${encodeURIComponent(waText)}`;
+    setWhatsappUrl(waUrl);
 
     try {
       await fetch('/api/bookings', {
@@ -28,9 +41,9 @@ export default function ContactSection() {
           customerEmail: formData.email.trim(),
           customerPhone: formData.phone.trim(),
           type: 'Online',
-          status: 'Request',
+          status: 'Pending',
           occasion: formData.service,
-          itemName: `Consultation: ${formData.service}`,
+          itemName: `Inquiry: ${formData.service}`,
           notes: formData.message || 'Atelier fitting inquiry from storefront',
         }),
       });
@@ -39,6 +52,9 @@ export default function ContactSection() {
     } finally {
       setIsSubmitting(false);
       setSubmitted(true);
+      if (typeof window !== 'undefined') {
+        window.open(waUrl, '_blank');
+      }
     }
   };
 
@@ -143,21 +159,40 @@ export default function ContactSection() {
               </div>
 
               {submitted ? (
-                <div className="bg-white border border-[#E2DAD0] rounded-xl p-6 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-full bg-[#EBF7EE] text-[#25D366] flex items-center justify-center mx-auto">
-                    <Check className="w-5 h-5" />
+                <div className="bg-white border border-[#E2DAD0] rounded-xl p-6 text-center space-y-3.5">
+                  <div className="w-11 h-11 rounded-full bg-[#EBF7EE] text-[#25D366] flex items-center justify-center mx-auto shadow-2xs">
+                    <Check className="w-6 h-6" />
                   </div>
-                  <h3 className="text-base font-semibold text-[#191C1A]">Inquiry Received</h3>
-                  <p className="text-xs text-[#736E67] max-w-sm mx-auto">
-                    Thank you, <span className="font-semibold text-[#191C1A]">{formData.name}</span>. Our Kigali atelier concierge will contact you regarding <span className="font-semibold text-[#191C1A]">{formData.service}</span> shortly.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setSubmitted(false)}
-                    className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#9E7B4F] hover:underline pt-1"
-                  >
-                    <span>Send another inquiry</span>
-                  </button>
+                  <div>
+                    <h3 className="text-base font-semibold text-[#191C1A]">Inquiry Received &amp; Sent</h3>
+                    <p className="text-xs text-[#736E67] max-w-sm mx-auto mt-1 leading-relaxed">
+                      Thank you, <span className="font-semibold text-[#191C1A]">{formData.name}</span>. Your request has been recorded in our Web Orders and opened in WhatsApp for immediate concierge assistance.
+                    </p>
+                  </div>
+
+                  {whatsappUrl && (
+                    <div className="pt-1">
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center space-x-2 bg-[#25D366] hover:bg-[#20ba5a] text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-xs hover:shadow transition-all"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Continue on WhatsApp</span>
+                      </a>
+                    </div>
+                  )}
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setSubmitted(false)}
+                      className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#9E7B4F] hover:underline pt-1 cursor-pointer"
+                    >
+                      <span>Send another inquiry</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-3 pt-1">

@@ -47,7 +47,12 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
     setIsSubmitting(true);
 
     try {
-      await fetch('/api/bookings', {
+      const pickup = eventDate || new Date().toISOString().split('T')[0];
+      const days = Number(rentalDays) > 0 ? Number(rentalDays) : 1;
+      const pickupTime = new Date(pickup + 'T00:00:00').getTime();
+      const returnDate = new Date(pickupTime + days * 86400000).toISOString().split('T')[0];
+
+      const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -57,18 +62,29 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
           itemId: suit.id,
           itemName: suit.name,
           itemImage: suit.image,
-          pickupDate: eventDate || new Date().toISOString().split('T')[0],
+          size: suit.sizes || 'Tailored to measure',
+          pickupDate: pickup,
+          returnDate: returnDate,
           rentalFee: totalAmount,
           totalAmount: totalAmount,
           type: 'Online',
-          notes: `Requested for ${rentalDays} day(s). Sizes: ${suit.sizes || 'Not specified'}`,
+          status: 'Request',
+          notes: `Suit rental for ${days} day(s). Size: ${suit.sizes || 'Not specified'}`,
         }),
       });
+
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Booking submission error from server:', errorData);
+        alert(errorData.error || 'Failed to submit reservation. Please try again.');
+      }
     } catch (err) {
       console.error('Booking submission error:', err);
+      alert('Network error submitting reservation. Please try again.');
     } finally {
       setIsSubmitting(false);
-      setSubmitted(true);
     }
   };
 

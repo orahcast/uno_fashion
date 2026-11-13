@@ -9,12 +9,13 @@ import {
   Download,
   Plus,
   Phone,
+  Trash2,
 } from 'lucide-react';
 import { INITIAL_CLIENT_BOOK } from '@/lib/data/mock-catalog';
 import { ClientBookEntry, ClientBookStatus } from '@/lib/types';
 
 export default function CustomersPage() {
-  const [entries, setEntries] = useState<ClientBookEntry[]>(INITIAL_CLIENT_BOOK);
+  const [entries, setEntries] = useState<ClientBookEntry[]>([]);
   const [filterTab, setFilterTab] = useState<'ALL' | ClientBookStatus>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecordModal, setShowRecordModal] = useState(false);
@@ -24,8 +25,11 @@ export default function CustomersPage() {
     fetch('/api/client-book')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setEntries(data);
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_client_book_ids') || '[]')
+            : [];
+          setEntries(data.filter((e: ClientBookEntry) => !deleted.includes(e.id)));
         }
       })
       .catch((err) => console.error('Error fetching client book:', err));
@@ -68,6 +72,34 @@ export default function CustomersPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: nextStatus }),
     }).catch(console.error);
+  };
+
+  const handleDeleteEntry = async (id: string, name: string) => {
+    if (confirm(`Delete "${name}" from the client book? This will permanently remove this record from the system.`)) {
+      setEntries((prev) => prev.filter((e) => e.id !== id));
+      if (typeof window !== 'undefined') {
+        try {
+          const deleted = JSON.parse(localStorage.getItem('uno_deleted_client_book_ids') || '[]');
+          if (!deleted.includes(id)) {
+            deleted.push(id);
+            localStorage.setItem('uno_deleted_client_book_ids', JSON.stringify(deleted));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      try {
+        const res = await fetch(`/api/client-book?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error('Failed to delete client book entry:', err);
+        }
+      } catch (err) {
+        console.error('Network error deleting client book entry:', err);
+      }
+    }
   };
 
   const handleRecordClient = (e: React.FormEvent) => {
@@ -278,61 +310,81 @@ export default function CustomersPage() {
                 <th className="py-3 px-4 font-semibold">Outfit Taken</th>
                 <th className="py-3 px-4 font-semibold">Return Due</th>
                 <th className="py-3 px-5 font-semibold">Status</th>
+                <th className="py-3 px-5 font-semibold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0EDE6]">
-              {filteredEntries.map((entry) => (
-                <tr
-                  key={entry.id}
-                  className="hover:bg-[#FAF8F5] transition-colors"
-                >
-                  <td className="py-4 px-5">
-                    <div className="text-[#191C1A] font-medium">{entry.dateLogged}</div>
-                    <div className="text-[10px] text-[#8C8075]">{entry.timeLogged}</div>
-                  </td>
-
-                  <td className="py-4 px-4 font-bold text-[#191C1A]">
-                    {entry.clientName}
-                  </td>
-
-                  <td className="py-4 px-4">
-                    <div className="inline-flex items-center space-x-1.5 text-[#9E7B4F] font-medium">
-                      <Phone className="w-3 h-3" />
-                      <span>{entry.telephone}</span>
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-4">
-                    <span className="inline-block bg-[#F2ECE1] text-[#52574F] text-[11px] font-mono px-2 py-0.5 rounded-sm border border-[#E5DFD4]">
-                      {entry.nationalId}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-4 font-medium text-[#191C1A]">
-                    {entry.outfitTaken}
-                  </td>
-
-                  <td className="py-4 px-4 text-[#52574F] font-medium">
-                    {entry.returnDue}
-                  </td>
-
-                  <td className="py-4 px-5">
-                    <select
-                      value={entry.status}
-                      onChange={(e) =>
-                        handleStatusToggle(entry.id, e.target.value as ClientBookStatus)
-                      }
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${getStatusStyle(
-                        entry.status
-                      )}`}
-                    >
-                      <option value="OUT">OUT</option>
-                      <option value="RETURNED">RETURNED</option>
-                      <option value="FITTING">FITTING</option>
-                    </select>
+              {filteredEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 px-6 text-center text-xs text-[#8C8075]">
+                    No client entries found matching your search or filter.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredEntries.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    className="hover:bg-[#FAF8F5] transition-colors"
+                  >
+                    <td className="py-4 px-5">
+                      <div className="text-[#191C1A] font-medium">{entry.dateLogged}</div>
+                      <div className="text-[10px] text-[#8C8075]">{entry.timeLogged}</div>
+                    </td>
+
+                    <td className="py-4 px-4 font-bold text-[#191C1A]">
+                      {entry.clientName}
+                    </td>
+
+                    <td className="py-4 px-4">
+                      <div className="inline-flex items-center space-x-1.5 text-[#9E7B4F] font-medium">
+                        <Phone className="w-3 h-3" />
+                        <span>{entry.telephone}</span>
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-4">
+                      <span className="inline-block bg-[#F2ECE1] text-[#52574F] text-[11px] font-mono px-2 py-0.5 rounded-sm border border-[#E5DFD4]">
+                        {entry.nationalId}
+                      </span>
+                    </td>
+
+                    <td className="py-4 px-4 font-medium text-[#191C1A]">
+                      {entry.outfitTaken}
+                    </td>
+
+                    <td className="py-4 px-4 text-[#52574F] font-medium">
+                      {entry.returnDue}
+                    </td>
+
+                    <td className="py-4 px-5">
+                      <select
+                        value={entry.status}
+                        onChange={(e) =>
+                          handleStatusToggle(entry.id, e.target.value as ClientBookStatus)
+                        }
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${getStatusStyle(
+                          entry.status
+                        )}`}
+                      >
+                        <option value="OUT">OUT</option>
+                        <option value="RETURNED">RETURNED</option>
+                        <option value="FITTING">FITTING</option>
+                      </select>
+                    </td>
+
+                    <td className="py-4 px-5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEntry(entry.id, entry.clientName)}
+                        className="inline-flex items-center justify-center p-1.5 text-[#8C8075] hover:text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                        title={`Delete ${entry.clientName} entry`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -50,6 +50,9 @@ export default function AdminRootLayout({
   const [globalSearch, setGlobalSearch] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [protocolCount, setProtocolCount] = useState(2);
+  const [clientBookCount, setClientBookCount] = useState(INITIAL_CLIENT_BOOK.length);
+  const [webOrdersCount, setWebOrdersCount] = useState(0);
+  const [inventoryCount, setInventoryCount] = useState(4);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,6 +65,18 @@ export default function AdminRootLayout({
           console.error(e);
         }
       }
+
+      const savedInv = localStorage.getItem('uno_inventory_items');
+      if (savedInv) {
+        try {
+          const parsedInv = JSON.parse(savedInv);
+          if (Array.isArray(parsedInv) && parsedInv.length > 0) {
+            setInventoryCount(parsedInv.length);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
     fetch('/api/protocol-bookings')
       .then((res) => (res.ok ? res.json() : null))
@@ -69,7 +84,33 @@ export default function AdminRootLayout({
         if (Array.isArray(data)) setProtocolCount(data.length);
       })
       .catch(console.error);
-  }, []);
+
+    fetch('/api/client-book')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) setClientBookCount(data.length);
+      })
+      .catch(console.error);
+
+    fetch('/api/bookings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_booking_ids') || '[]')
+            : [];
+          setWebOrdersCount(data.filter((b: any) => !deleted.includes(b.id)).length);
+        }
+      })
+      .catch(console.error);
+
+    fetch('/api/items')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) setInventoryCount(data.length);
+      })
+      .catch(console.error);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -82,16 +123,13 @@ export default function AdminRootLayout({
     router.refresh();
   };
 
-  const totalPieces = INITIAL_ITEMS.reduce((sum, item) => sum + item.totalStock, 0);
-  const clientBookCount = INITIAL_CLIENT_BOOK.length;
-  const webOrdersCount = INITIAL_BOOKINGS.length;
-
+  // Dynamic Navigation Links for Sidebar & Navigation
   const navLinks = [
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
     { label: 'Landing Hero', href: '/hero', icon: Sparkles },
     { label: 'Web Orders', href: '/bookings', icon: ShoppingBag, badge: String(webOrdersCount + protocolCount) },
     { label: 'Client Book', href: '/customers', icon: BookOpen, badge: String(clientBookCount) },
-    { label: 'Inventory', href: '/inventory', icon: Package, badge: String(totalPieces) },
+    { label: 'Inventory', href: '/inventory', icon: Package, badge: String(inventoryCount) },
     { label: 'Accolades & VIP', href: '/accolades', icon: Award },
     { label: 'Protocol Service', href: '/services', icon: Sparkles },
   ];
@@ -462,7 +500,7 @@ export default function AdminRootLayout({
           {[
             { label: 'Overview', href: '/', icon: LayoutDashboard },
             { label: 'Orders', href: '/bookings', icon: ShoppingBag, badge: webOrdersCount + protocolCount },
-            { label: 'Suits', href: '/inventory', icon: Package, badge: totalPieces },
+            { label: 'Suits', href: '/inventory', icon: Package, badge: inventoryCount },
             { label: 'Protocol', href: '/services', icon: Sparkles },
             { label: 'Clients', href: '/customers', icon: BookOpen },
           ].map((item) => {
