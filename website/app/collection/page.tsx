@@ -8,6 +8,7 @@ import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { RentalItem } from '@/lib/types';
 import { formatRWF } from '@/lib/utils';
 import RentItemModal, { RentModalSuit } from '@/components/storefront/RentItemModal';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CollectionPage() {
   const searchParams = useSearchParams();
@@ -28,6 +29,30 @@ export default function CollectionPage() {
         }
       })
       .catch((err) => console.error('Error fetching catalog items:', err));
+
+    // Supabase Realtime: instantly update collection catalog when items change
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:items_catalog')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'items' },
+        () => {
+          fetch('/api/items')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data) && data.length > 0) {
+                setItems(data);
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleCategoryChange = (category: string) => {

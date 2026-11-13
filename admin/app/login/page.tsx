@@ -46,16 +46,17 @@ export default function AdminLoginPage() {
       }
 
       if (data?.session) {
-        router.push('/');
-        router.refresh();
+        window.location.href = '/';
+        return;
       } else {
-        router.push('/');
+        window.location.href = '/';
+        return;
       }
     } catch (err: unknown) {
       console.error('Login error:', err);
       // Fallback check
       if (email.trim() === 'ufashionagency@gmail.com' && password === 'Unofashion123!') {
-        router.push('/');
+        window.location.href = '/';
         return;
       }
       setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred.');

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Award, Star, Sparkles, CheckCircle2 } from 'lucide-react';
 import { INITIAL_ACCOLADES } from '@/lib/data/mock-catalog';
 import { AccoladeItem } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CelebrityAccolades() {
   const [accolades, setAccolades] = useState<AccoladeItem[]>(INITIAL_ACCOLADES);
@@ -34,6 +35,29 @@ export default function CelebrityAccolades() {
           }
         }
       });
+    // 2. Supabase Realtime: instantly update VIP accolades when admin edits
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:accolades')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'accolades' },
+        () => {
+          fetch('/api/accolades')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data) && data.length > 0) {
+                setAccolades(data);
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Double the list for seamless continuous infinite marquee

@@ -8,6 +8,7 @@ import { RentalItem } from '@/lib/types';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { formatRWF } from '@/lib/utils';
 import RentItemModal, { RentModalSuit } from './RentItemModal';
+import { createClient } from '@/lib/supabase/client';
 
 interface PopularCollectionProps {
   items?: RentalItem[];
@@ -18,7 +19,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
   const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns'>('all');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
 
-  // Fetch live items from the database/API
+  // Fetch live items from the database/API & subscribe to real-time changes
   useEffect(() => {
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
@@ -28,6 +29,30 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         }
       })
       .catch((err) => console.error('Error loading popular collection:', err));
+
+    // Supabase Realtime: instantly update collection when item is added/edited/deleted
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:items_popular')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'items' },
+        () => {
+          fetch('/api/items')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data) && data.length > 0) {
+                setItems(data);
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Filter items based on active tab

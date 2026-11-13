@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 const DEFAULT_SLIDES = [
   { src: '/images/landing-page-1.jpeg', title: 'Wardrobe Alignment' },
@@ -30,6 +31,35 @@ export default function WeddingServices() {
         }
       })
       .catch((err) => console.error('Failed to load protocol photos:', err));
+
+    // Supabase Realtime: instantly update Protocol slides when admin edits pictures
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:protocol_slides')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.protocol_photos',
+        },
+        (payload: any) => {
+          if (payload.new && Array.isArray(payload.new.value)) {
+            setSlides(
+              payload.new.value.map((item: { image?: string; src?: string; title: string }) => ({
+                src: item.image || item.src || '/images/landing-page-1.jpeg',
+                title: item.title,
+              }))
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Slowly cycle slides every 5 seconds

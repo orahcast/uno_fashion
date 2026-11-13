@@ -342,3 +342,29 @@ create policy "Authenticated delete access for inventory-photos"
   to authenticated
   using (bucket_id = 'inventory-photos');
 
+-- -----------------------------------------------------------------------------
+-- 10. SUPABASE REALTIME CONFIGURATION
+-- -----------------------------------------------------------------------------
+-- Ensure tables broadcast live changes to connected clients over WebSockets
+alter table public.items replica identity full;
+alter table public.site_settings replica identity full;
+alter table public.accolades replica identity full;
+alter table public.bookings replica identity full;
+alter table public.protocol_bookings replica identity full;
+alter table public.client_book replica identity full;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.items;
+    alter publication supabase_realtime add table public.site_settings;
+    alter publication supabase_realtime add table public.accolades;
+    alter publication supabase_realtime add table public.bookings;
+    alter publication supabase_realtime add table public.protocol_bookings;
+    alter publication supabase_realtime add table public.client_book;
+  end if;
+exception when others then
+  -- Tables might already be in publication; ignore duplicate error
+  null;
+end $$;
+

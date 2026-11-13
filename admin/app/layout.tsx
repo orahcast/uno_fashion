@@ -110,6 +110,69 @@ export default function AdminRootLayout({
         if (Array.isArray(data)) setInventoryCount(data.length);
       })
       .catch(console.error);
+
+    // Supabase Realtime: live badge counters across bookings, protocol, clients & items
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:admin_badges')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          fetch('/api/bookings')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data)) {
+                const deleted = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_booking_ids') || '[]')
+                  : [];
+                setWebOrdersCount(data.filter((b: any) => !deleted.includes(b.id)).length);
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'protocol_bookings' },
+        () => {
+          fetch('/api/protocol-bookings')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data)) setProtocolCount(data.length);
+            })
+            .catch(console.error);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'items' },
+        () => {
+          fetch('/api/items')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data)) setInventoryCount(data.length);
+            })
+            .catch(console.error);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_book' },
+        () => {
+          fetch('/api/client-book')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data)) setClientBookCount(data.length);
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [pathname]);
 
   const handleSignOut = async () => {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Phone, ChevronRight } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface HeroConfig {
   image: string;
@@ -56,6 +57,34 @@ export default function Hero() {
       .catch((err) => {
         console.error('Failed to fetch hero config from API:', err);
       });
+
+    // 3. Supabase Realtime: instantly update Hero when changed in Admin
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:hero_config')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.hero_config',
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.value) {
+            const updated = payload.new.value;
+            setConfig((prev) => ({ ...prev, ...updated }));
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('uno_hero_config', JSON.stringify(updated));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const isDataUrl = config.image.startsWith('data:');

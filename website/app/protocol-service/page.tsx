@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ArrowRight, Phone, CheckCircle2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 const DEFAULT_PROTOCOL_PHOTOS = [
   {
@@ -62,6 +63,30 @@ export default function ProtocolServicePage() {
         }
       })
       .catch((err) => console.error('Failed to load protocol photos:', err));
+
+    // Supabase Realtime: instantly update marquee when protocol photos change
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:protocol_marquee')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.protocol_photos',
+        },
+        (payload: any) => {
+          if (payload.new && Array.isArray(payload.new.value)) {
+            setPhotos(payload.new.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const cleanPhone = '250783036628';

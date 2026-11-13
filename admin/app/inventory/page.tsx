@@ -54,6 +54,33 @@ export default function InventoryCentralPage() {
         }
       }
     }
+
+    // Supabase Realtime: sync inventory changes live across browser tabs and devices
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:admin_inventory')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'items' },
+        () => {
+          fetch('/api/items')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data) && data.length > 0) {
+                setItems(data);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('uno_inventory_items', JSON.stringify(data));
+                }
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const persistItems = (updated: RentalItem[]) => {

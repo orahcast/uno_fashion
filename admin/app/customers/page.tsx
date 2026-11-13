@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { INITIAL_CLIENT_BOOK } from '@/lib/data/mock-catalog';
 import { ClientBookEntry, ClientBookStatus } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CustomersPage() {
   const [entries, setEntries] = useState<ClientBookEntry[]>([]);
@@ -33,6 +34,33 @@ export default function CustomersPage() {
         }
       })
       .catch((err) => console.error('Error fetching client book:', err));
+
+    // Supabase Realtime: instantly sync client register entries
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:client_book')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_book' },
+        () => {
+          fetch('/api/client-book')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data)) {
+                const deleted = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_client_book_ids') || '[]')
+                  : [];
+                setEntries(data.filter((e: ClientBookEntry) => !deleted.includes(e.id)));
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Record Form State

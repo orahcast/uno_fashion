@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { INITIAL_BOOKINGS } from '@/lib/data/mock-catalog';
 import { Booking, BookingStatus } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 export interface ProtocolBooking {
   id: string;
@@ -92,6 +93,47 @@ export default function BookingsManagementPage() {
         }
       })
       .catch((err) => console.error('Error fetching protocol bookings:', err));
+
+    // Supabase Realtime: instantly update orders when customers book online or submit fitting requests
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:admin_bookings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          fetch('/api/bookings')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data)) {
+                const deleted = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_booking_ids') || '[]')
+                  : [];
+                setOrders(data.filter((b: Booking) => !deleted.includes(b.id)));
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'protocol_bookings' },
+        () => {
+          fetch('/api/protocol-bookings')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (Array.isArray(data) && data.length > 0) {
+                setProtocolBookings(data);
+              }
+            })
+            .catch(console.error);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Filtered Suits Orders
