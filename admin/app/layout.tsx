@@ -330,7 +330,7 @@ export default function AdminRootLayout({
           {/* Bottom User Profile & Quick Links */}
           <div className="space-y-3 pt-5 border-t border-[#26201B]">
             <a
-              href="http://localhost:3000"
+              href={process.env.NEXT_PUBLIC_STOREFRONT_URL || "http://localhost:3000"}
               target="_blank"
               rel="noreferrer"
               className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-1.5 rounded-md hover:bg-[#1E1916] transition-colors"
@@ -456,7 +456,7 @@ export default function AdminRootLayout({
               {/* Bottom User Profile & View Storefront */}
               <div className="space-y-3 pt-5 border-t border-[#26201B]">
                 <a
-                  href="http://localhost:3000"
+                  href={process.env.NEXT_PUBLIC_STOREFRONT_URL || "http://localhost:3000"}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center space-x-2 text-xs text-[#B8ADA2] hover:text-white px-2.5 py-2 rounded-md hover:bg-[#1E1916] transition-colors"

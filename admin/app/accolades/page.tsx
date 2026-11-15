@@ -290,7 +290,7 @@ export default function AccoladesAdminPage() {
 
         <div className="flex items-center gap-3">
           <a
-            href="http://localhost:3000"
+            href={process.env.NEXT_PUBLIC_STOREFRONT_URL || "http://localhost:3000"}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium border border-[#D4CCBE] text-[#4A443E] hover:bg-[#F2ECE1] rounded-sm transition-colors"

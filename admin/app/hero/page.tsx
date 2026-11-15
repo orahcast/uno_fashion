@@ -252,7 +252,7 @@ export default function HeroLandingManagerPage() {
 
         <div className="flex items-center gap-3">
           <a
-            href="http://localhost:3000"
+            href={process.env.NEXT_PUBLIC_STOREFRONT_URL || "http://localhost:3000"}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#4A2311] bg-white border border-[#E8E4DC] hover:bg-[#FAF8F5] rounded-full transition-colors shadow-2xs"
