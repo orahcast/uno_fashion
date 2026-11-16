@@ -81,7 +81,12 @@ export default function AdminRootLayout({
     fetch('/api/protocol-bookings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data)) setProtocolCount(data.length);
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]')
+            : [];
+          setProtocolCount(data.filter((p: any) => !deleted.includes(p.id)).length);
+        }
       })
       .catch(console.error);
 
@@ -144,7 +149,12 @@ export default function AdminRootLayout({
           fetch('/api/protocol-bookings')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data)) setProtocolCount(data.length);
+              if (Array.isArray(data)) {
+                const deleted = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]')
+                  : [];
+                setProtocolCount(data.filter((p: any) => !deleted.includes(p.id)).length);
+              }
             })
             .catch(console.error);
         }

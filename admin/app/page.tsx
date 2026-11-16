@@ -93,11 +93,14 @@ export default function AdminOverviewPage() {
         }
       }
 
+      const deletedProto = JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]');
       const savedProto = localStorage.getItem('uno_protocol_bookings');
       if (savedProto) {
         try {
           const parsed = JSON.parse(savedProto);
-          if (Array.isArray(parsed)) setProtocolBookings(parsed);
+          if (Array.isArray(parsed)) {
+            setProtocolBookings(parsed.filter((p: any) => !deletedProto.includes(p.id)));
+          }
         } catch (e) {
           console.error(e);
         }
@@ -107,7 +110,12 @@ export default function AdminOverviewPage() {
     fetch('/api/protocol-bookings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data)) setProtocolBookings(data);
+        if (Array.isArray(data)) {
+          const deletedProto = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]')
+            : [];
+          setProtocolBookings(data.filter((p: any) => !deletedProto.includes(p.id)));
+        }
       })
       .catch(console.error);
   }, []);

@@ -69,12 +69,13 @@ export default function BookingsManagementPage() {
 
     // 2. Fetch protocol bookings
     if (typeof window !== 'undefined') {
+      const deletedProto = JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]');
       const saved = localStorage.getItem('uno_protocol_bookings');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setProtocolBookings(parsed);
+          if (Array.isArray(parsed)) {
+            setProtocolBookings(parsed.filter((p: ProtocolBooking) => !deletedProto.includes(p.id)));
           }
         } catch (e) {
           console.error(e);
@@ -85,10 +86,14 @@ export default function BookingsManagementPage() {
     fetch('/api/protocol-bookings')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setProtocolBookings(data);
+        if (Array.isArray(data)) {
+          const deletedProto = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]')
+            : [];
+          const filtered = data.filter((p: ProtocolBooking) => !deletedProto.includes(p.id));
+          setProtocolBookings(filtered);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('uno_protocol_bookings', JSON.stringify(data));
+            localStorage.setItem('uno_protocol_bookings', JSON.stringify(filtered));
           }
         }
       })
@@ -122,8 +127,15 @@ export default function BookingsManagementPage() {
           fetch('/api/protocol-bookings')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data) && data.length > 0) {
-                setProtocolBookings(data);
+              if (Array.isArray(data)) {
+                const deletedProto = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]')
+                  : [];
+                const filtered = data.filter((p: ProtocolBooking) => !deletedProto.includes(p.id));
+                setProtocolBookings(filtered);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('uno_protocol_bookings', JSON.stringify(filtered));
+                }
               }
             })
             .catch(console.error);
@@ -280,6 +292,15 @@ export default function BookingsManagementPage() {
       const updated = protocolBookings.filter((p) => p.id !== id);
       setProtocolBookings(updated);
       if (typeof window !== 'undefined') {
+        try {
+          const deleted = JSON.parse(localStorage.getItem('uno_deleted_protocol_ids') || '[]');
+          if (!deleted.includes(id)) {
+            deleted.push(id);
+            localStorage.setItem('uno_deleted_protocol_ids', JSON.stringify(deleted));
+          }
+        } catch (e) {
+          console.error(e);
+        }
         localStorage.setItem('uno_protocol_bookings', JSON.stringify(updated));
       }
       try {
