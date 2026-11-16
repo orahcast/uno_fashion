@@ -15,7 +15,7 @@ export default function CelebrityAccolades() {
     fetch('/api/accolades')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setAccolades(data);
         }
       })
@@ -26,7 +26,7 @@ export default function CelebrityAccolades() {
           if (stored) {
             try {
               const parsed = JSON.parse(stored);
-              if (Array.isArray(parsed) && parsed.length > 0) {
+              if (Array.isArray(parsed)) {
                 setAccolades(parsed);
               }
             } catch (e) {
@@ -46,7 +46,7 @@ export default function CelebrityAccolades() {
           fetch('/api/accolades')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data) && data.length > 0) {
+              if (Array.isArray(data)) {
                 setAccolades(data);
               }
             })

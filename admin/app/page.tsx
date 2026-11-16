@@ -44,7 +44,12 @@ export default function AdminOverviewPage() {
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data)) setItems(data);
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]')
+            : [];
+          setItems(data.filter((item: any) => !deleted.includes(item.id)));
+        }
       })
       .catch(console.error);
 
@@ -75,12 +80,13 @@ export default function AdminOverviewPage() {
       .catch(console.error);
 
     if (typeof window !== 'undefined') {
+      const deletedItems = JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]');
       const saved = localStorage.getItem('uno_inventory_items');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setItems(parsed);
+          if (Array.isArray(parsed)) {
+            setItems(parsed.filter((item: any) => !deletedItems.includes(item.id)));
           }
         } catch (err) {
           console.error('Failed to parse saved inventory:', err);

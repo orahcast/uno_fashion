@@ -107,7 +107,12 @@ export default function AdminRootLayout({
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data)) setInventoryCount(data.length);
+        if (Array.isArray(data)) {
+          const deleted = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]')
+            : [];
+          setInventoryCount(data.filter((i: any) => !deleted.includes(i.id)).length);
+        }
       })
       .catch(console.error);
 
@@ -151,7 +156,12 @@ export default function AdminRootLayout({
           fetch('/api/items')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data)) setInventoryCount(data.length);
+              if (Array.isArray(data)) {
+                const deleted = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]')
+                  : [];
+                setInventoryCount(data.filter((i: any) => !deleted.includes(i.id)).length);
+              }
             })
             .catch(console.error);
         }

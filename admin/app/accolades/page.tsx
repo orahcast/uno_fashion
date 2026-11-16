@@ -23,7 +23,7 @@ import { createClient } from '@/lib/supabase/client';
 import { convertHeicToJpeg } from '@/lib/heic-converter';
 
 export default function AccoladesAdminPage() {
-  const [accolades, setAccolades] = useState<AccoladeItem[]>(INITIAL_ACCOLADES);
+  const [accolades, setAccolades] = useState<AccoladeItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -40,13 +40,39 @@ export default function AccoladesAdminPage() {
   const [formFeaturedPerson, setFormFeaturedPerson] = useState('');
   const [formBadge, setFormBadge] = useState('');
 
-  // Fetch accolades from API
+  // Fetch accolades from API and local storage
   useEffect(() => {
+    // 1. Initial load from local storage
+    if (typeof window !== 'undefined') {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('uno_deleted_accolade_ids') || '[]');
+      const saved = localStorage.getItem('uno_accolades');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setAccolades(parsed.filter((a: AccoladeItem) => !deletedIds.includes(a.id)));
+          }
+        } catch (e) {
+          console.error('Failed to parse saved accolades:', e);
+        }
+      } else {
+        setAccolades(INITIAL_ACCOLADES.filter((a) => !deletedIds.includes(a.id)));
+      }
+    }
+
+    // 2. Fetch live from API
     fetch('/api/accolades')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAccolades(data);
+        if (Array.isArray(data)) {
+          const deletedIds: string[] = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_accolade_ids') || '[]')
+            : [];
+          const filtered = data.filter((item: AccoladeItem) => !deletedIds.includes(item.id));
+          setAccolades(filtered);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('uno_accolades', JSON.stringify(filtered));
+          }
         }
       })
       .catch((err) => {
@@ -119,6 +145,13 @@ export default function AccoladesAdminPage() {
         featuredPerson: formFeaturedPerson.trim() || undefined,
         badge: formBadge.trim() || undefined,
       };
+      // If this id was somehow in deleted ids, remove it
+      if (typeof window !== 'undefined') {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem('uno_deleted_accolade_ids') || '[]');
+        if (deletedIds.includes(newItem.id)) {
+          localStorage.setItem('uno_deleted_accolade_ids', JSON.stringify(deletedIds.filter((d) => d !== newItem.id)));
+        }
+      }
       updatedList = [newItem, ...accolades];
     }
 
@@ -131,7 +164,29 @@ export default function AccoladesAdminPage() {
     if (!confirm('Are you sure you want to remove this item from the sliding marquee?')) return;
     const updated = accolades.filter((a) => a.id !== id);
     setAccolades(updated);
-    await syncToServer(updated, 'Item removed from storefront marquee.');
+
+    if (typeof window !== 'undefined') {
+      try {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem('uno_deleted_accolade_ids') || '[]');
+        if (!deletedIds.includes(id)) {
+          deletedIds.push(id);
+          localStorage.setItem('uno_deleted_accolade_ids', JSON.stringify(deletedIds));
+        }
+        localStorage.setItem('uno_accolades', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    try {
+      await fetch(`/api/accolades?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+    } catch (e) {
+      console.error('Failed to call delete accolade endpoint:', e);
+    }
+
+    await syncToServer(updated, 'Item permanently removed from marquee.');
   };
 
   const handleMove = async (index: number, direction: 'up' | 'down') => {
@@ -149,6 +204,10 @@ export default function AccoladesAdminPage() {
 
   const handleResetDefaults = async () => {
     if (!confirm('Reset all items back to the default curated accolades?')) return;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('uno_deleted_accolade_ids');
+      localStorage.setItem('uno_accolades', JSON.stringify(INITIAL_ACCOLADES));
+    }
     setAccolades(INITIAL_ACCOLADES);
     await syncToServer(INITIAL_ACCOLADES, 'Reset to curated defaults.');
   };

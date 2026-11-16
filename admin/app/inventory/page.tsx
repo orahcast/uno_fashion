@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { convertHeicToJpeg } from '@/lib/heic-converter';
 
 export default function InventoryCentralPage() {
-  const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
+  const [items, setItems] = useState<RentalItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<'All' | InventorySimpleStatus>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showItemModal, setShowItemModal] = useState(false);
@@ -27,33 +27,40 @@ export default function InventoryCentralPage() {
 
   // Sync with live database and fallback to localStorage
   useEffect(() => {
-    // 1. Fetch live from API
-    fetch('/api/items')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setItems(data);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('uno_inventory_items', JSON.stringify(data));
-          }
-        }
-      })
-      .catch((err) => console.error('Error fetching inventory items:', err));
-
-    // 2. Initial load from local storage
+    // 1. Initial load from local storage
     if (typeof window !== 'undefined') {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]');
       const saved = localStorage.getItem('uno_inventory_items');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setItems(parsed);
+          if (Array.isArray(parsed)) {
+            setItems(parsed.filter((item: RentalItem) => !deletedIds.includes(item.id)));
           }
         } catch (err) {
           console.error('Failed to parse saved inventory:', err);
         }
+      } else {
+        setItems(INITIAL_ITEMS.filter((item) => !deletedIds.includes(item.id)));
       }
     }
+
+    // 2. Fetch live from API
+    fetch('/api/items')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const deletedIds: string[] = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]')
+            : [];
+          const filtered = data.filter((item: RentalItem) => !deletedIds.includes(item.id));
+          setItems(filtered);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('uno_inventory_items', JSON.stringify(filtered));
+          }
+        }
+      })
+      .catch((err) => console.error('Error fetching inventory items:', err));
 
     // Supabase Realtime: sync inventory changes live across browser tabs and devices
     const supabase = createClient();
@@ -66,10 +73,14 @@ export default function InventoryCentralPage() {
           fetch('/api/items')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data) && data.length > 0) {
-                setItems(data);
+              if (Array.isArray(data)) {
+                const deletedIds: string[] = typeof window !== 'undefined'
+                  ? JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]')
+                  : [];
+                const filtered = data.filter((item: RentalItem) => !deletedIds.includes(item.id));
+                setItems(filtered);
                 if (typeof window !== 'undefined') {
-                  localStorage.setItem('uno_inventory_items', JSON.stringify(data));
+                  localStorage.setItem('uno_inventory_items', JSON.stringify(filtered));
                 }
               }
             })
@@ -128,7 +139,19 @@ export default function InventoryCentralPage() {
       const updated = items.filter((i) => i.id !== id);
       persistItems(updated);
 
-      fetch(`/api/items?id=${id}`, {
+      if (typeof window !== 'undefined') {
+        try {
+          const deleted: string[] = JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]');
+          if (!deleted.includes(id)) {
+            deleted.push(id);
+            localStorage.setItem('uno_deleted_item_ids', JSON.stringify(deleted));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      fetch(`/api/items?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       }).catch(console.error);
     }
@@ -289,6 +312,18 @@ export default function InventoryCentralPage() {
         allowOnlineBooking: true,
         cleaningTurnaroundDays: 1,
       };
+
+      if (typeof window !== 'undefined') {
+        try {
+          const deleted: string[] = JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]');
+          if (deleted.includes(newItem.id)) {
+            localStorage.setItem('uno_deleted_item_ids', JSON.stringify(deleted.filter((d) => d !== newItem.id)));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
       persistItems([newItem, ...items]);
 
       fetch('/api/items', {
