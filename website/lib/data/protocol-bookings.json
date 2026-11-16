@@ -1,15 +1,1 @@
-[
-  {
-    "id": "proto-1794582790673",
-    "bookingNumber": "PR-338",
-    "customerName": "Festus Bigirimana",
-    "customerPhone": "0782157887",
-    "eventDate": "2026-11-21",
-    "serviceType": "Wedding & Ceremonial Protocol",
-    "partySize": "wedding",
-    "venue": "",
-    "notes": "wedding",
-    "status": "Pending",
-    "createdAt": "2026-11-13T15:13:10.673Z"
-  }
-]
+[]

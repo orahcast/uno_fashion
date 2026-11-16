@@ -10,6 +10,8 @@ import {
   Shirt,
   Calendar,
   Phone,
+  Eye,
+  X,
 } from 'lucide-react';
 import { INITIAL_BOOKINGS } from '@/lib/data/mock-catalog';
 import { Booking, BookingStatus } from '@/lib/types';
@@ -41,6 +43,42 @@ export default function BookingsManagementPage() {
 
   // Modals & Details
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
+  const [viewingMeasures, setViewingMeasures] = useState<{
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    bookingNumber: string;
+    itemName: string;
+    size: string;
+    waist?: string | null;
+    pantLength?: string | null;
+    suitSize?: string | null;
+    rawNotes?: string;
+  } | null>(null);
+
+  const parseOrderMeasurements = (notes?: string) => {
+    if (!notes) return null;
+    const bracketMatch = notes.match(/\[Measurements:\s*([^\]]+)\]/i);
+    const targetStr = bracketMatch ? bracketMatch[1] : notes;
+
+    let waist: string | null = null;
+    let pantLength: string | null = null;
+    let suitSize: string | null = null;
+
+    const waistMatch = targetStr.match(/Waist:\s*([0-9.]+)(?:")?/i);
+    if (waistMatch) waist = waistMatch[1];
+
+    const lengthMatch = targetStr.match(/(?:Pant Length|Length):\s*([0-9.]+)(?:")?/i);
+    if (lengthMatch) pantLength = lengthMatch[1];
+
+    const suitMatch = targetStr.match(/(?:Suit Size|Size):\s*([0-9.]+)/i);
+    if (suitMatch) suitSize = suitMatch[1];
+
+    if (waist || pantLength || suitSize) {
+      return { waist, pantLength, suitSize, raw: targetStr };
+    }
+    return null;
+  };
 
   // New Suit Order Form State
   const [newCustomer, setNewCustomer] = useState('');
@@ -526,6 +564,7 @@ export default function BookingsManagementPage() {
                   const cleanPhone = order.customerPhone.replace(/[^0-9+]/g, '');
                   const isPending = order.status === 'Pending' || order.status === 'Request';
                   const isConfirmed = order.status === 'Confirmed' || order.status === 'Ready';
+                  const parsedMeasures = parseOrderMeasurements(order.notes);
 
                   return (
                     <tr
@@ -566,9 +605,35 @@ export default function BookingsManagementPage() {
                         <div className="font-medium text-[#191C1A] text-xs">
                           {order.itemName}
                         </div>
-                        <span className="inline-block text-[10px] text-[#8C8075] bg-[#FAF8F5] px-1.5 py-0.2 rounded border border-[#E8E4DC] mt-0.5">
-                          {order.size}
-                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="inline-block text-[10px] text-[#8C8075] bg-[#FAF8F5] px-1.5 py-0.2 rounded border border-[#E8E4DC]">
+                            {order.size}
+                          </span>
+                          {parsedMeasures && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setViewingMeasures({
+                                  customerName: order.customerName,
+                                  customerPhone: order.customerPhone,
+                                  customerEmail: order.customerEmail,
+                                  bookingNumber: order.bookingNumber,
+                                  itemName: order.itemName,
+                                  size: order.size,
+                                  waist: parsedMeasures.waist,
+                                  pantLength: parsedMeasures.pantLength,
+                                  suitSize: parsedMeasures.suitSize,
+                                  rawNotes: order.notes,
+                                })
+                              }
+                              className="inline-flex items-center gap-1 bg-[#FAF4EB] hover:bg-[#9E7B4F] text-[#9E7B4F] hover:text-white px-2 py-0.5 rounded text-[10px] font-semibold border border-[#ECDCCB] hover:border-[#9E7B4F] transition-all cursor-pointer shadow-2xs"
+                              title="Click to view client measurements"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              <span>See Measures</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Date */}
@@ -595,6 +660,31 @@ export default function BookingsManagementPage() {
                       {/* Actions */}
                       <td className="py-3 px-4 rounded-r-xl border-y border-r border-[#E8E4DC] whitespace-nowrap text-right">
                         <div className="inline-flex items-center justify-end gap-1.5">
+                          {/* See Measures Icon */}
+                          {parsedMeasures && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setViewingMeasures({
+                                  customerName: order.customerName,
+                                  customerPhone: order.customerPhone,
+                                  customerEmail: order.customerEmail,
+                                  bookingNumber: order.bookingNumber,
+                                  itemName: order.itemName,
+                                  size: order.size,
+                                  waist: parsedMeasures.waist,
+                                  pantLength: parsedMeasures.pantLength,
+                                  suitSize: parsedMeasures.suitSize,
+                                  rawNotes: order.notes,
+                                })
+                              }
+                              className="p-1.5 text-[#9E7B4F] hover:bg-[#FAF4EB] rounded-md transition-colors cursor-pointer"
+                              title="See Client Measures"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
                           {/* Call Icon */}
                           <a
                             href={`tel:${cleanPhone}`}
@@ -925,6 +1015,145 @@ export default function BookingsManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Client Tailoring & Fitting Measures */}
+      {viewingMeasures && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setViewingMeasures(null)}
+        >
+          <div
+            className="bg-[#FAF8F5] max-w-lg w-full p-6 border border-[#E8E4DC] shadow-2xl rounded-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-[#E8E4DC] pb-3">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-[#9E7B4F]">
+                  Atelier Fitting Sheet
+                </span>
+                <h3 className="font-serif-luxury text-xl sm:text-2xl text-[#191C1A]">
+                  Client Measurements
+                </h3>
+                <p className="text-xs text-[#8C8075] mt-0.5">
+                  Order <span className="font-semibold text-[#14100E]">{viewingMeasures.bookingNumber}</span> · {viewingMeasures.customerName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingMeasures(null)}
+                className="w-8 h-8 rounded-full hover:bg-[#EAE4D9] flex items-center justify-center text-[#8C8075] hover:text-[#191C1A] transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Suit & Client Overview */}
+            <div className="bg-white p-3.5 rounded-xl border border-[#E8E4DC] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8C8075]">Outfit Reserved:</span>
+                <span className="font-semibold text-[#191C1A]">{viewingMeasures.itemName}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8C8075]">Catalog Size:</span>
+                <span className="font-medium text-[#191C1A] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E4DC]">
+                  {viewingMeasures.size}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#8C8075]">Client Contact:</span>
+                <a
+                  href={`tel:${viewingMeasures.customerPhone.replace(/[^0-9+]/g, '')}`}
+                  className="font-mono text-[#9E7B4F] hover:underline"
+                >
+                  {viewingMeasures.customerPhone}
+                </a>
+              </div>
+            </div>
+
+            {/* Measurement Stat Cards */}
+            <div>
+              <div className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8075] mb-2">
+                Custom Tailoring Specifications
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Pant Waist */}
+                <div className="bg-white p-3.5 rounded-xl border border-[#E8E4DC] text-center">
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-[#8C8075] mb-1">
+                    Pant Waist
+                  </div>
+                  <div className="text-lg sm:text-xl font-serif-luxury font-bold text-[#14100E]">
+                    {viewingMeasures.waist ? `${viewingMeasures.waist}"` : '—'}
+                  </div>
+                  <div className="text-[10px] text-[#8C8075] mt-0.5">Inches</div>
+                </div>
+
+                {/* Pant Length */}
+                <div className="bg-white p-3.5 rounded-xl border border-[#E8E4DC] text-center">
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-[#8C8075] mb-1">
+                    Pant Length
+                  </div>
+                  <div className="text-lg sm:text-xl font-serif-luxury font-bold text-[#14100E]">
+                    {viewingMeasures.pantLength ? `${viewingMeasures.pantLength}"` : '—'}
+                  </div>
+                  <div className="text-[10px] text-[#8C8075] mt-0.5">Inches</div>
+                </div>
+
+                {/* Suit Size */}
+                <div className="bg-white p-3.5 rounded-xl border border-[#E8E4DC] text-center">
+                  <div className="text-[10px] uppercase tracking-wider font-semibold text-[#8C8075] mb-1">
+                    Suit Size
+                  </div>
+                  <div className="text-lg sm:text-xl font-serif-luxury font-bold text-[#9E7B4F]">
+                    {viewingMeasures.suitSize || '—'}
+                  </div>
+                  <div className="text-[10px] text-[#8C8075] mt-0.5">Tailored</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes / Context */}
+            {viewingMeasures.rawNotes && (
+              <div className="bg-white p-3 rounded-xl border border-[#E8E4DC] text-xs">
+                <div className="text-[10px] uppercase font-semibold text-[#8C8075] mb-1">
+                  Full Order Notes
+                </div>
+                <p className="text-[#59524A] leading-relaxed">
+                  {viewingMeasures.rawNotes}
+                </p>
+              </div>
+            )}
+
+            {/* Actions: Direct WhatsApp & Close */}
+            <div className="pt-2 flex items-center gap-3">
+              <a
+                href={`https://wa.me/${viewingMeasures.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                  `Hello ${viewingMeasures.customerName}, regarding your Uno Fashion reservation (${viewingMeasures.bookingNumber}):\nWe have reviewed your measurements (${[
+                    viewingMeasures.waist ? `Waist: ${viewingMeasures.waist}"` : null,
+                    viewingMeasures.pantLength ? `Length: ${viewingMeasures.pantLength}"` : null,
+                    viewingMeasures.suitSize ? `Suit: ${viewingMeasures.suitSize}` : null,
+                  ].filter(Boolean).join(', ')}). Everything is set for your fitting!`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2.5 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Message Client on WhatsApp</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setViewingMeasures(null)}
+                className="bg-white border border-[#D5CFCE] hover:bg-[#F2ECE1] text-[#191C1A] px-4 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

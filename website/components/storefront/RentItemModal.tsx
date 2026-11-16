@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, Check } from 'lucide-react';
+import { X, Check, MessageCircle } from 'lucide-react';
 import { formatRWF } from '@/lib/utils';
 
 export interface RentModalSuit {
@@ -27,6 +27,13 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Optional Measurements State (Pant Waist: 28-40, Pant Length: 26-38, Suit Size: 38-60)
+  const [showMeasurements, setShowMeasurements] = useState(false);
+  const [waist, setWaist] = useState('');
+  const [pantLength, setPantLength] = useState('');
+  const [suitSize, setSuitSize] = useState('');
+  const [measureError, setMeasureError] = useState<string | null>(null);
+
   // Prevent background scrolling on iOS / Android when modal is open
   useEffect(() => {
     if (suit) {
@@ -42,8 +49,39 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
   const totalAmount = suit.rentalPrice * (rentalDays > 0 ? rentalDays : 1);
 
+  const validateMeasurements = (): boolean => {
+    setMeasureError(null);
+    if (waist) {
+      const w = Number(waist);
+      if (isNaN(w) || w < 28 || w > 40) {
+        setMeasureError('Please provide a realistic tailored waist measurement or leave blank.');
+        return false;
+      }
+    }
+    if (pantLength) {
+      const l = Number(pantLength);
+      if (isNaN(l) || l < 26 || l > 38) {
+        setMeasureError('Please provide a realistic tailored pant length or leave blank.');
+        return false;
+      }
+    }
+    if (suitSize) {
+      const s = Number(suitSize);
+      if (isNaN(s) || s < 38 || s > 60) {
+        setMeasureError('Please provide a realistic tailored suit size or leave blank.');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateMeasurements()) {
+      setShowMeasurements(true);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -51,6 +89,14 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
       const days = Number(rentalDays) > 0 ? Number(rentalDays) : 1;
       const pickupTime = new Date(pickup + 'T00:00:00').getTime();
       const returnDate = new Date(pickupTime + days * 86400000).toISOString().split('T')[0];
+
+      const measureParts: string[] = [];
+      if (waist) measureParts.push(`Waist: ${waist}"`);
+      if (pantLength) measureParts.push(`Pant Length: ${pantLength}"`);
+      if (suitSize) measureParts.push(`Suit Size: ${suitSize}`);
+
+      const measureNote = measureParts.length > 0 ? `[Measurements: ${measureParts.join(' | ')}]` : '';
+      const fullNotes = [measureNote, `Suit rental for ${days} day(s). Size: ${suit.sizes || 'Tailored to measure'}`].filter(Boolean).join(' · ');
 
       const res = await fetch('/api/bookings', {
         method: 'POST',
@@ -62,14 +108,15 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
           itemId: suit.id,
           itemName: suit.name,
           itemImage: suit.image,
-          size: suit.sizes || 'Tailored to measure',
+          size: suit.sizes || (suitSize ? `Size ${suitSize}` : 'Tailored to measure'),
           pickupDate: pickup,
           returnDate: returnDate,
           rentalFee: totalAmount,
           totalAmount: totalAmount,
           type: 'Online',
           status: 'Request',
-          notes: `Suit rental for ${days} day(s). Size: ${suit.sizes || 'Not specified'}`,
+          notes: fullNotes,
+          measurements: measureParts.length > 0 ? { waist, pantLength, suitSize } : undefined,
         }),
       });
 
@@ -90,6 +137,11 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
   const handleClose = () => {
     setSubmitted(false);
+    setWaist('');
+    setPantLength('');
+    setSuitSize('');
+    setMeasureError(null);
+    setShowMeasurements(false);
     onClose();
   };
 
@@ -166,18 +218,63 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
               </p>
             </div>
 
-            <div className="p-3 bg-[#FAF7F2] rounded-xl text-xs text-[#59524A] max-w-sm mx-auto border border-[#EFEAE2]">
-              Estimated Total for {rentalDays} day{rentalDays > 1 ? 's' : ''}:{' '}
-              <span className="font-bold text-[#191C1A]">{formatRWF(totalAmount)}</span>
+            <div className="p-3 bg-[#FAF7F2] rounded-xl text-xs text-[#59524A] max-w-sm mx-auto border border-[#EFEAE2] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[#8C8278]">Rental Duration ({rentalDays} day{rentalDays > 1 ? 's' : ''}):</span>
+                <span className="font-bold text-[#191C1A]">{formatRWF(totalAmount)}</span>
+              </div>
+
+              {(waist || pantLength || suitSize) && (
+                <div className="pt-2 border-t border-[#E8E2D6] text-left">
+                  <div className="text-[10px] uppercase font-semibold text-[#8C8278] tracking-wider mb-1">
+                    Tailored Measurements Recorded:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 text-[11px] font-medium text-[#191C1A]">
+                    {waist && (
+                      <span className="bg-white px-2 py-0.5 rounded border border-[#DDD6CB]">
+                        Waist: {waist}&quot;
+                      </span>
+                    )}
+                    {pantLength && (
+                      <span className="bg-white px-2 py-0.5 rounded border border-[#DDD6CB]">
+                        Length: {pantLength}&quot;
+                      </span>
+                    )}
+                    {suitSize && (
+                      <span className="bg-white px-2 py-0.5 rounded border border-[#DDD6CB]">
+                        Suit Size: {suitSize}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleClose}
-              className="w-full min-h-[44px] bg-[#191C1A] hover:bg-[#9E7B4F] text-white py-3 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors touch-manipulation cursor-pointer"
-            >
-              Done
-            </button>
+            <div className="space-y-2 max-w-sm mx-auto pt-1">
+              <a
+                href={`https://wa.me/250783036628?text=${encodeURIComponent(
+                  `Hello Uno Fashion, I just reserved "${suit.name}" for ${rentalDays} day(s).\nName: ${fullName}\nPhone: ${phone}${
+                    waist || pantLength || suitSize
+                      ? `\nMeasurements: Waist ${waist || 'N/A'}", Length ${pantLength || 'N/A'}", Size ${suitSize || 'N/A'}`
+                      : ''
+                  }`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full min-h-[44px] bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2.5 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Message Atelier on WhatsApp</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleClose}
+                className="w-full min-h-[44px] bg-[#191C1A] hover:bg-[#9E7B4F] text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors touch-manipulation cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1 overscroll-contain">
@@ -254,6 +351,114 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
                   className="w-full bg-white border border-[#DDD6CB] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#191C1A] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all touch-manipulation"
                 />
               </div>
+            </div>
+
+            {/* Optional Tailoring Measurements (Pant Waist: 28-40, Pant Length: 26-38, Suit Size: 38-60) */}
+            <div className="border border-[#E8E2D6] rounded-xl overflow-hidden bg-[#FAF8F5]/60 transition-all">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMeasurements(!showMeasurements);
+                  setMeasureError(null);
+                }}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-[#FAF5ED] transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] uppercase tracking-wider font-semibold text-[#191C1A]">
+                    Tailoring Measurements (Optional)
+                  </span>
+                  {(waist || pantLength || suitSize) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#9E7B4F]" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-[11px] text-[#8C8075]">
+                  <span>{showMeasurements ? 'Hide' : 'Add custom fit'}</span>
+                  {showMeasurements ? (
+                    <svg className="w-3.5 h-3.5 text-[#8C8075]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m18 15-6-6-6 6" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 text-[#8C8075]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                    </svg>
+                  )}
+                </div>
+              </button>
+
+              {showMeasurements && (
+                <div className="p-3.5 pt-2 border-t border-[#F0ECE3] space-y-3 bg-white">
+                  <p className="text-[11px] text-[#736E67] leading-relaxed">
+                    Provide your tailored measurements for an atelier-grade fit, or leave blank to fit at our showroom.
+                  </p>
+
+                  {measureError && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 leading-normal">
+                      {measureError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Pant Waist */}
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A] mb-1">
+                        Waist (Inches)
+                      </label>
+                      <input
+                        type="number"
+                        min={28}
+                        max={40}
+                        step="0.5"
+                        placeholder="e.g. 34"
+                        value={waist}
+                        onChange={(e) => {
+                          setWaist(e.target.value);
+                          setMeasureError(null);
+                        }}
+                        className="w-full bg-white border border-[#DDD6CB] rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all"
+                      />
+                    </div>
+
+                    {/* Pant Length */}
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A] mb-1">
+                        Pant Length (Inches)
+                      </label>
+                      <input
+                        type="number"
+                        min={26}
+                        max={38}
+                        step="0.5"
+                        placeholder="e.g. 32"
+                        value={pantLength}
+                        onChange={(e) => {
+                          setPantLength(e.target.value);
+                          setMeasureError(null);
+                        }}
+                        className="w-full bg-white border border-[#DDD6CB] rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all"
+                      />
+                    </div>
+
+                    {/* Suit Size */}
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A] mb-1">
+                        Suit Size
+                      </label>
+                      <input
+                        type="number"
+                        min={38}
+                        max={60}
+                        placeholder="e.g. 42"
+                        value={suitSize}
+                        onChange={(e) => {
+                          setSuitSize(e.target.value);
+                          setMeasureError(null);
+                        }}
+                        className="w-full bg-white border border-[#DDD6CB] rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Estimated Total Calculation */}

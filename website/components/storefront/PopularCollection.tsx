@@ -15,7 +15,7 @@ interface PopularCollectionProps {
 }
 
 export default function PopularCollection({ items: initialPropItems }: PopularCollectionProps) {
-  const [items, setItems] = useState<RentalItem[]>(initialPropItems || INITIAL_ITEMS);
+  const [items, setItems] = useState<RentalItem[]>(initialPropItems || []);
   const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns'>('all');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
 
@@ -24,7 +24,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setItems(data);
         }
       })
@@ -41,7 +41,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
           fetch('/api/items')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data) && data.length > 0) {
+              if (Array.isArray(data)) {
                 setItems(data);
               }
             })
@@ -128,8 +128,14 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         </div>
 
         {/* Dynamic Items Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-5 gap-y-8">
-          {displayItems.map((item) => {
+        {displayItems.length === 0 ? (
+          <div className="py-12 text-center text-[#8C8075] border border-dashed border-[#EAE5DC] rounded-xl bg-white/50">
+            <p className="text-sm font-medium text-[#191C1A]">New Collection Arriving Soon</p>
+            <p className="text-xs text-[#8C8075] mt-1">Our atelier is currently curating the upcoming suiting and couture line.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-5 gap-y-8">
+            {displayItems.map((item) => {
             const cardModalSuit: RentModalSuit = {
               id: item.id,
               name: item.name,
@@ -194,6 +200,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
             );
           })}
         </div>
+      )}
 
         {/* Reassurance text */}
         <p className="text-[11px] text-[#7B8079] mt-8 text-center sm:text-left">

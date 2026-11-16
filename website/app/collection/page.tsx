@@ -18,13 +18,13 @@ export default function CollectionPage() {
   const currentCategory = searchParams.get('category') || 'all';
   const [sortBy, setSortBy] = useState<string>('featured');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
-  const [items, setItems] = useState<RentalItem[]>(INITIAL_ITEMS);
+  const [items, setItems] = useState<RentalItem[]>([]);
 
   useEffect(() => {
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setItems(data);
         }
       })
@@ -41,7 +41,7 @@ export default function CollectionPage() {
           fetch('/api/items')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (Array.isArray(data) && data.length > 0) {
+              if (Array.isArray(data)) {
                 setItems(data);
               }
             })

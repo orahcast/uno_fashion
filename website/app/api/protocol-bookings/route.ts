@@ -3,13 +3,76 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@/lib/supabase/server';
 
-const DATA_FILE = path.join(process.cwd(), 'lib', 'data', 'protocol-bookings.json');
+function getProtocolFilePath() {
+  const possiblePaths = [
+    path.join(process.cwd(), 'lib', 'data', 'protocol-bookings.json'),
+    path.join(process.cwd(), 'website', 'lib', 'data', 'protocol-bookings.json'),
+    path.join(process.cwd(), '..', 'website', 'lib', 'data', 'protocol-bookings.json'),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return possiblePaths[0];
+}
+
+function getDeletedFilePath() {
+  const possiblePaths = [
+    path.join(process.cwd(), 'lib', 'data', 'deleted-protocol-bookings.json'),
+    path.join(process.cwd(), 'website', 'lib', 'data', 'deleted-protocol-bookings.json'),
+    path.join(process.cwd(), '..', 'website', 'lib', 'data', 'deleted-protocol-bookings.json'),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return possiblePaths[0];
+}
+
+function getDeletedProtocolIds(): string[] {
+  try {
+    const f = getDeletedFilePath();
+    if (fs.existsSync(f)) {
+      const data = JSON.parse(fs.readFileSync(f, 'utf-8'));
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.error('Error reading deleted protocol bookings file:', err);
+  }
+  return [];
+}
+
+function addDeletedProtocolId(id: string) {
+  try {
+    const f = getDeletedFilePath();
+    const current = getDeletedProtocolIds();
+    if (!current.includes(id)) {
+      current.push(id);
+      fs.writeFileSync(f, JSON.stringify(current, null, 2), 'utf-8');
+    }
+  } catch (err) {
+    console.error('Error writing deleted protocol bookings file:', err);
+  }
+}
+
+function removeDeletedProtocolId(id: string) {
+  try {
+    const f = getDeletedFilePath();
+    const current = getDeletedProtocolIds().filter((d) => d !== id);
+    fs.writeFileSync(f, JSON.stringify(current, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error removing deleted protocol id:', err);
+  }
+}
 
 function getLocalBookings() {
+  const deletedIds = getDeletedProtocolIds();
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const fileData = fs.readFileSync(DATA_FILE, 'utf-8');
-      return JSON.parse(fileData);
+    const f = getProtocolFilePath();
+    if (fs.existsSync(f)) {
+      const fileData = fs.readFileSync(f, 'utf-8');
+      const parsed = JSON.parse(fileData);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((b: any) => !deletedIds.includes(b.id));
+      }
     }
   } catch (error) {
     console.error('Error reading protocol bookings:', error);
@@ -19,7 +82,8 @@ function getLocalBookings() {
 
 function saveLocalBookings(data: unknown) {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    const f = getProtocolFilePath();
+    fs.writeFileSync(f, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   } catch (error) {
     return false;
@@ -33,7 +97,7 @@ function isSupabaseConfigured() {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -42,6 +106,8 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
+  const deletedIds = getDeletedProtocolIds();
+
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createClient();
@@ -51,19 +117,21 @@ export async function GET() {
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        const formatted = data.map((b) => ({
-          id: b.id,
-          bookingNumber: b.booking_number,
-          customerName: b.customer_name,
-          customerPhone: b.customer_phone,
-          eventDate: b.event_date,
-          serviceType: b.service_type,
-          partySize: b.party_size,
-          venue: b.venue,
-          notes: b.notes,
-          status: b.status,
-          createdAt: b.created_at,
-        }));
+        const formatted = data
+          .filter((b) => !deletedIds.includes(b.id))
+          .map((b) => ({
+            id: b.id,
+            bookingNumber: b.booking_number,
+            customerName: b.customer_name,
+            customerPhone: b.customer_phone,
+            eventDate: b.event_date,
+            serviceType: b.service_type,
+            partySize: b.party_size,
+            venue: b.venue,
+            notes: b.notes,
+            status: b.status,
+            createdAt: b.created_at,
+          }));
         return NextResponse.json(formatted, { headers: CORS_HEADERS });
       }
     } catch (err) {
@@ -85,9 +153,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const bookingId = body.id || `proto-${Date.now()}`;
+    removeDeletedProtocolId(bookingId);
+
     const newBooking = {
-      id: `proto-${Date.now()}`,
-      bookingNumber: `PR-${Math.floor(100 + Math.random() * 900)}`,
+      id: bookingId,
+      bookingNumber: body.bookingNumber || `PR-${Math.floor(100 + Math.random() * 900)}`,
       customerName: body.customerName,
       customerPhone: body.customerPhone || '',
       eventDate: body.eventDate || '',
@@ -128,6 +199,80 @@ export async function POST(request: Request) {
     saveLocalBookings([newBooking, ...current]);
 
     return NextResponse.json({ success: true, booking: newBooking }, { headers: CORS_HEADERS });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid request' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, status } = body;
+    if (!id || !status) {
+      return NextResponse.json(
+        { error: 'id and status required' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        await supabase
+          .from('protocol_bookings')
+          .update({ status })
+          .eq('id', id);
+      } catch (err) {
+        console.error('Supabase update protocol booking error:', err);
+      }
+    }
+
+    const current = getLocalBookings();
+    const updated = current.map((b: any) => (b.id === id ? { ...b, status } : b));
+    saveLocalBookings(updated);
+
+    return NextResponse.json({ success: true, count: updated.length }, { headers: CORS_HEADERS });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid request' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Protocol booking id is required' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    addDeletedProtocolId(id);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { error } = await supabase.from('protocol_bookings').delete().eq('id', id);
+        if (error) {
+          console.error('Supabase protocol delete error:', error);
+        }
+      } catch (err) {
+        console.error('Supabase error deleting protocol booking:', err);
+      }
+    }
+
+    const current = getLocalBookings().filter((b: any) => b.id !== id);
+    saveLocalBookings(current);
+
+    return NextResponse.json({ success: true, id }, { headers: CORS_HEADERS });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Invalid request' },
