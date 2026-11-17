@@ -279,6 +279,7 @@ export default function AdminRootLayout({
     <html lang="en" className={`${cormorant.variable} ${plusJakarta.variable}`}>
       <head>
         <title>Uno Fashion · Inventory Central</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />

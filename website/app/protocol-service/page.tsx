@@ -180,6 +180,7 @@ export default function ProtocolServicePage() {
                     fill
                     className="object-cover object-top group-hover:scale-103 transition-transform duration-500 ease-out"
                     sizes="(max-width: 640px) 240px, 288px"
+                    unoptimized
                   />
                 </div>
                 <div className="p-4 bg-white">

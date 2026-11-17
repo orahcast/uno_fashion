@@ -402,17 +402,6 @@ export default function BookingsManagementPage() {
             {currentCount} {currentCount === 1 ? 'order' : 'orders'} found
           </p>
         </div>
-
-        {activeTab === 'suits' && (
-          <button
-            type="button"
-            onClick={() => setShowNewOrderModal(true)}
-            className="inline-flex items-center gap-1.5 bg-[#14100E] hover:bg-[#9E7B4F] text-white px-4 py-2 text-xs font-medium rounded-lg transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Record Order</span>
-          </button>
-        )}
       </div>
 
       {/* Main Category Tabs (Separates Suits and Protocol cleanly) */}

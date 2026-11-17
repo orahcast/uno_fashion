@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Plus, Edit, Trash2, CheckCircle2, X, Upload, Sparkles } from 'lucide-react';
+import { Plus, Edit, Trash2, CheckCircle2, X, Upload, Sparkles, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { convertHeicToJpeg } from '@/lib/heic-converter';
 
@@ -63,6 +63,10 @@ export default function ProtocolServiceAdminPage() {
   const [formTitle, setFormTitle] = useState('');
   const [formCaption, setFormCaption] = useState('');
   const [formImage, setFormImage] = useState('');
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -150,6 +154,9 @@ export default function ProtocolServiceAdminPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploadError(null);
+    setIsUploading(true);
+
     const isHeic =
       file.name.toLowerCase().endsWith('.heic') ||
       file.name.toLowerCase().endsWith('.heif') ||
@@ -159,16 +166,18 @@ export default function ProtocolServiceAdminPage() {
     let fileToUpload = file;
 
     if (isHeic) {
-      showToast('Converting iPhone HEIC to JPEG...');
+      setUploadStatus('Converting iPhone HEIC to JPEG...');
       try {
         fileToUpload = await convertHeicToJpeg(file);
       } catch (convErr: any) {
-        showToast(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
+        setUploadError(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
+        setIsUploading(false);
+        setUploadStatus(null);
         return;
       }
-    } else {
-      showToast('Uploading photo...');
     }
+
+    setUploadStatus('Uploading & optimizing image...');
 
     try {
       const formData = new FormData();
@@ -191,11 +200,9 @@ export default function ProtocolServiceAdminPage() {
         } else {
           setFormImage(json.url);
         }
-        showToast(
-          isHeic
-            ? 'HEIC converted to JPEG & saved to Supabase!'
-            : 'Photo uploaded to Supabase Storage!'
-        );
+        showToast('Photo uploaded successfully!');
+        setIsUploading(false);
+        setUploadStatus(null);
         return;
       } else {
         throw new Error(json.error || 'Server upload failed');
@@ -225,7 +232,9 @@ export default function ProtocolServiceAdminPage() {
           } else {
             setFormImage(publicUrl);
           }
-          showToast('Photo uploaded directly to Supabase Storage!');
+          showToast('Photo uploaded to Supabase Storage!');
+          setIsUploading(false);
+          setUploadStatus(null);
           return;
         }
       } catch (clientErr) {
@@ -246,6 +255,8 @@ export default function ProtocolServiceAdminPage() {
           }
           showToast('Photo loaded (local preview)!');
         }
+        setIsUploading(false);
+        setUploadStatus(null);
       };
       reader.readAsDataURL(fileToUpload);
     }
@@ -255,7 +266,9 @@ export default function ProtocolServiceAdminPage() {
     setEditingId(null);
     setFormTitle('');
     setFormCaption('');
-    setFormImage('/images/landing-page-1.jpeg');
+    setFormImage('');
+    setShowUrlInput(false);
+    setUploadError(null);
     setIsModalOpen(true);
   };
 
@@ -264,12 +277,14 @@ export default function ProtocolServiceAdminPage() {
     setFormTitle(p.title);
     setFormCaption(p.caption);
     setFormImage(p.image);
+    setShowUrlInput(false);
+    setUploadError(null);
     setIsModalOpen(true);
   };
 
   const handleSaveModal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTitle.trim() || !formImage.trim()) return;
+    if (!formTitle.trim() || !formImage.trim() || isUploading) return;
 
     let updated: ProtocolPhoto[];
     if (editingId) {
@@ -359,10 +374,14 @@ export default function ProtocolServiceAdminPage() {
                   fill
                   className="object-cover object-top group-hover:scale-102 transition-transform duration-300"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  unoptimized
                 />
 
                 {/* Quick Image Upload Button overlay */}
-                <label className="absolute bottom-2 right-2 bg-black/75 hover:bg-black text-white p-2 rounded-full cursor-pointer shadow-md backdrop-blur-xs transition-colors">
+                <label
+                  className="absolute bottom-2 right-2 bg-black/75 hover:bg-black text-white p-2 rounded-full cursor-pointer shadow-md backdrop-blur-xs transition-colors"
+                  title="Upload a new photo for this card"
+                >
                   <Upload className="w-4 h-4 text-[#C4A47C]" />
                   <input
                     type="file"
@@ -412,7 +431,7 @@ export default function ProtocolServiceAdminPage() {
       {/* Add / Edit Picture Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl border border-[#E8E4DC] space-y-5">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl border border-[#E8E4DC] space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#F0ECE3] pb-3">
               <h3 className="text-lg font-serif-luxury font-semibold text-[#191C1A]">
                 {editingId ? 'Edit Protocol Picture' : 'Add New Protocol Picture'}
@@ -428,7 +447,7 @@ export default function ProtocolServiceAdminPage() {
 
             <form onSubmit={handleSaveModal} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[#6B726A] mb-1 font-medium">Moment Title</label>
+                <label className="block text-[#6B726A] mb-1 font-medium">Moment Title *</label>
                 <input
                   type="text"
                   required
@@ -440,7 +459,7 @@ export default function ProtocolServiceAdminPage() {
               </div>
 
               <div>
-                <label className="block text-[#6B726A] mb-1 font-medium">Caption / Description</label>
+                <label className="block text-[#6B726A] mb-1 font-medium">Caption / Description *</label>
                 <textarea
                   rows={2}
                   required
@@ -451,37 +470,103 @@ export default function ProtocolServiceAdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[#6B726A] mb-1 font-medium">Picture</label>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    required
-                    value={formImage}
-                    onChange={(e) => setFormImage(e.target.value)}
-                    placeholder="Image URL or upload below"
-                    className="w-full border border-[#D5CFCE] p-2.5 rounded-sm text-[#191C1A] focus:outline-none focus:border-[#191C1A]"
-                  />
+              {/* Photo Upload Section */}
+              <div className="space-y-2">
+                <label className="block text-[#6B726A] font-medium">Photo *</label>
 
-                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4A443E] bg-[#FAF8F5] border border-[#D4CCBE] rounded-md hover:bg-[#F2ECE1] transition-colors">
-                    <Upload className="w-3.5 h-3.5 text-[#C4A47C]" />
-                    <span>Upload photo from device</span>
-                    <input
-                      type="file"
-                      accept="image/*,.heic,.HEIC,.heif,.HEIF"
-                      onChange={(e) => handleFileUpload(e)}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                {uploadError && (
+                  <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 rounded-sm text-[11px]">
+                    {uploadError}
+                  </div>
+                )}
+
+                {isUploading ? (
+                  <div className="p-8 bg-[#FAF8F5] border border-[#C4A47C]/40 rounded-xl flex flex-col items-center justify-center gap-2 text-[#9E7B4F]">
+                    <svg className="animate-spin w-6 h-6 text-[#9E7B4F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-xs font-medium">{uploadStatus || 'Processing image...'}</span>
+                  </div>
+                ) : formImage ? (
+                  /* Image Preview Card */
+                  <div className="space-y-2">
+                    <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-[#14100E] border border-[#C4A47C]/40 shadow-xs">
+                      <Image
+                        src={formImage}
+                        alt="Photo Preview"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                        <label className="bg-black/80 hover:bg-black text-white px-2.5 py-1 rounded-full text-[10px] font-medium cursor-pointer shadow-md flex items-center gap-1 backdrop-blur-xs transition-colors">
+                          <Upload className="w-3 h-3 text-[#C4A47C]" />
+                          <span>Change</span>
+                          <input
+                            type="file"
+                            accept="image/*,.heic,.HEIC,.heif,.HEIF"
+                            onChange={(e) => handleFileUpload(e)}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setFormImage('')}
+                          className="bg-black/80 hover:bg-red-700 text-white p-1 rounded-full text-[10px] cursor-pointer shadow-md backdrop-blur-xs transition-colors"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-[#2D6A4F] flex items-center gap-1 font-medium">
+                      <Check className="w-3 h-3" /> Photo selected and ready to publish
+                    </span>
+                  </div>
+                ) : (
+                  /* Prominent Upload Dropzone */
+                  <div className="space-y-3">
+                    <label className="border-2 border-dashed border-[#D4CCBE] hover:border-[#9E7B4F] rounded-xl p-6 flex flex-col items-center justify-center text-center bg-[#FAF8F5] hover:bg-[#F5EFE6] transition-colors cursor-pointer group">
+                      <div className="w-10 h-10 rounded-full bg-white shadow-xs flex items-center justify-center mb-2 group-hover:scale-105 transition-transform border border-[#EAE5DC]">
+                        <Upload className="w-5 h-5 text-[#9E7B4F]" />
+                      </div>
+                      <span className="font-semibold text-[#191C1A] text-xs">
+                        Click to upload photo from your device
+                      </span>
+                      <span className="text-[10px] text-[#736E67] mt-0.5">
+                        Supports JPG, PNG, WebP or iPhone HEIC photos
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*,.heic,.HEIC,.heif,.HEIF"
+                        onChange={(e) => handleFileUpload(e)}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Direct URL Toggle */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowUrlInput(!showUrlInput)}
+                        className="text-[10px] text-[#9E7B4F] hover:underline"
+                      >
+                        {showUrlInput ? 'Hide image URL input' : '+ Or paste a direct image URL'}
+                      </button>
+                      {showUrlInput && (
+                        <input
+                          type="text"
+                          value={formImage}
+                          onChange={(e) => setFormImage(e.target.value)}
+                          placeholder="https://... or /images/..."
+                          className="w-full mt-1.5 border border-[#D5CFCE] p-2 rounded-sm text-[#191C1A] focus:outline-none focus:border-[#191C1A]"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Preview */}
-              {formImage && (
-                <div className="relative aspect-[16/9] w-full rounded-md overflow-hidden bg-neutral-900 border border-[#E8E4DC]">
-                  <Image src={formImage} alt="Preview" fill className="object-cover" />
-                </div>
-              )}
 
               <div className="pt-3 flex items-center justify-end space-x-3 border-t border-[#F0ECE3]">
                 <button
@@ -493,9 +578,16 @@ export default function ProtocolServiceAdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#1A2421] text-white rounded-sm font-semibold hover:bg-black cursor-pointer"
+                  disabled={isUploading || !formTitle.trim() || !formImage.trim()}
+                  className="px-5 py-2 bg-[#1A2421] text-white rounded-sm font-semibold hover:bg-black cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Save &amp; Publish
+                  {isUploading && (
+                    <svg className="animate-spin w-3.5 h-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  <span>{editingId ? 'Save Changes' : 'Save & Publish'}</span>
                 </button>
               </div>
             </form>
