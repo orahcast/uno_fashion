@@ -190,7 +190,7 @@ export async function POST(request: Request) {
       description: body.description || '',
       rental_price: Number(body.rentalPrice || 0),
       refundable_deposit: Number(body.refundableDeposit || 0),
-      rental_period_days: Number(body.rentalPeriodDays || 4),
+      rental_period_days: Number(body.rentalPeriodDays || 1),
       images: Array.isArray(body.images) ? body.images : body.image ? [body.image] : [],
       sizes: Array.isArray(body.sizes) ? body.sizes : ['38', '40', '42', '44'],
       size_range: body.sizeRange || '',

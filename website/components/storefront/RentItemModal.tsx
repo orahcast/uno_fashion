@@ -23,7 +23,7 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [eventDate, setEventDate] = useState('');
-  const [rentalDays, setRentalDays] = useState(1);
+  const [rentalDays, setRentalDays] = useState<number | string>(1);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,7 +47,8 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
   if (!suit) return null;
 
-  const totalAmount = suit.rentalPrice * (rentalDays > 0 ? rentalDays : 1);
+  const numDays = Math.max(1, parseInt(String(rentalDays), 10) || 1);
+  const totalAmount = suit.rentalPrice * numDays;
 
   const validateMeasurements = (): boolean => {
     setMeasureError(null);
@@ -86,7 +87,7 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
     try {
       const pickup = eventDate || new Date().toISOString().split('T')[0];
-      const days = Number(rentalDays) > 0 ? Number(rentalDays) : 1;
+      const days = Math.max(1, parseInt(String(rentalDays), 10) || 1);
       const pickupTime = new Date(pickup + 'T00:00:00').getTime();
       const returnDate = new Date(pickupTime + days * 86400000).toISOString().split('T')[0];
 
@@ -220,7 +221,7 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
             <div className="p-3 bg-[#FAF7F2] rounded-xl text-xs text-[#59524A] max-w-sm mx-auto border border-[#EFEAE2] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[#8C8278]">Rental Duration ({rentalDays} day{rentalDays > 1 ? 's' : ''}):</span>
+                <span className="text-[#8C8278]">Rental Duration ({numDays} day{numDays > 1 ? 's' : ''}):</span>
                 <span className="font-bold text-[#191C1A]">{formatRWF(totalAmount)}</span>
               </div>
 
@@ -253,7 +254,7 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
             <div className="space-y-2 max-w-sm mx-auto pt-1">
               <a
                 href={`https://wa.me/250783036628?text=${encodeURIComponent(
-                  `Hello Uno Fashion, I just reserved "${suit.name}" for ${rentalDays} day(s).\nName: ${fullName}\nPhone: ${phone}${
+                  `Hello Uno Fashion, I just reserved "${suit.name}" for ${numDays} day(s).\nName: ${fullName}\nPhone: ${phone}${
                     waist || pantLength || suitSize
                       ? `\nMeasurements: Waist ${waist || 'N/A'}", Length ${pantLength || 'N/A'}", Size ${suitSize || 'N/A'}`
                       : ''
@@ -344,10 +345,24 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
                 <input
                   type="number"
                   min="1"
-                  max="14"
+                  max="30"
                   required
+                  placeholder="1"
                   value={rentalDays}
-                  onChange={(e) => setRentalDays(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setRentalDays('');
+                    } else {
+                      const parsed = parseInt(val, 10);
+                      setRentalDays(isNaN(parsed) ? '' : Math.max(1, parsed));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (rentalDays === '' || Number(rentalDays) < 1) {
+                      setRentalDays(1);
+                    }
+                  }}
                   className="w-full bg-white border border-[#DDD6CB] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#191C1A] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all touch-manipulation"
                 />
               </div>

@@ -59,8 +59,18 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
   const displayItems = useMemo(() => {
     return items.filter((item) => {
       if (item.status === 'Archived' || item.isArchived) return false;
-      if (activeTab === 'suits') return item.categorySlug === 'suits' || item.category === 'Suits';
-      if (activeTab === 'gowns') return item.categorySlug === 'gowns' || item.category === 'Bridal gowns';
+      if (activeTab === 'suits')
+        return (
+          item.categorySlug === 'suits' ||
+          item.category === 'Suits' ||
+          item.category === 'Tuxedo'
+        );
+      if (activeTab === 'gowns')
+        return (
+          item.categorySlug === 'gowns' ||
+          item.category === 'Bridal gowns' ||
+          item.category === 'Bridal Gowns'
+        );
       return true;
     });
   }, [items, activeTab]);

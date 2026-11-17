@@ -1,4 +1,4 @@
-export type ItemCategory = 'Suits' | 'Bridal gowns' | 'Accessories' | 'Tuxedo' | 'Suit';
+export type ItemCategory = 'Suits' | 'Bridal gowns' | 'Accessories' | 'Tuxedo' | 'Suit' | string;
 
 export type InventorySimpleStatus = 'Available' | 'Rented' | 'Dry cleaning';
 

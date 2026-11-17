@@ -307,13 +307,13 @@ export default function InventoryCentralPage() {
             : formCategory === 'Accessories'
             ? 'accessories'
             : 'suits',
-        color: 'Classic',
-        fabric: 'Atelier Wool',
-        fit: 'Tailored fit',
+        color: '',
+        fabric: '',
+        fit: '',
         description: formName,
         rentalPrice: Number(formPrice) || 0,
-        refundableDeposit: 100000,
-        rentalPeriodDays: 4,
+        refundableDeposit: 0,
+        rentalPeriodDays: 1,
         images: [finalImage],
         sizes: [formSizeRange],
         sizeRange: formSizeRange,

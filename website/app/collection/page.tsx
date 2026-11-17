@@ -71,8 +71,19 @@ export default function CollectionPage() {
     return items.filter((item) => {
       // Category filter
       if (currentCategory !== 'all') {
-        if (currentCategory === 'suits' && item.categorySlug !== 'suits') return false;
-        if (currentCategory === 'gowns' && item.categorySlug !== 'gowns') return false;
+        if (
+          currentCategory === 'suits' &&
+          item.categorySlug !== 'suits' &&
+          item.category !== 'Suits' &&
+          item.category !== 'Tuxedo'
+        )
+          return false;
+        if (
+          currentCategory === 'gowns' &&
+          item.categorySlug !== 'gowns' &&
+          item.category !== 'Bridal gowns'
+        )
+          return false;
         if (currentCategory === 'veils' && item.categorySlug !== 'veils') return false;
       }
       return true;
@@ -85,8 +96,8 @@ export default function CollectionPage() {
 
   const categories = [
     { label: 'All Pieces', value: 'all' },
-    { label: 'Tailored Suits', value: 'suits' },
-    { label: 'Bridal Gowns', value: 'gowns' },
+    { label: 'Suits & Tuxedos', value: 'suits' },
+    { label: 'Bridal Gowns & Dresses', value: 'gowns' },
     { label: 'Accessories & Veils', value: 'veils' },
   ];
 
@@ -98,7 +109,7 @@ export default function CollectionPage() {
           Home
         </Link>
         <span>/</span>
-        <span className="text-[#191C1A] font-medium">Rentals</span>
+        <span className="text-[#191C1A] font-medium">Collections</span>
       </nav>
 
       {/* Page Header */}
@@ -169,7 +180,7 @@ export default function CollectionPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-7">
           {filteredItems.map((item) => {
-            const dailyRate = Math.round(item.rentalPrice / (item.rentalPeriodDays || 4));
+            const dailyRate = item.rentalPrice;
 
             return (
               <div key={item.id} className="group flex flex-col">
@@ -183,7 +194,7 @@ export default function CollectionPage() {
                       name: item.name,
                       rentalPrice: dailyRate,
                       image: item.images[0],
-                      sizes: `SIZE ${item.sizes.join('—')}`,
+                      sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
                     })
                   }
                   onKeyDown={(e) => {
@@ -194,7 +205,7 @@ export default function CollectionPage() {
                         name: item.name,
                         rentalPrice: dailyRate,
                         image: item.images[0],
-                        sizes: `SIZE ${item.sizes.join('—')}`,
+                        sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
                       });
                     }
                   }}
@@ -212,6 +223,13 @@ export default function CollectionPage() {
                   <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[9px] font-semibold text-[#191C1A] shadow-xs pointer-events-none">
                     {item.badge || 'Rental'}
                   </div>
+
+                  {/* Bottom-Left Category Pill */}
+                  {item.category && (
+                    <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[9px] font-medium text-white pointer-events-none capitalize">
+                      {item.category}
+                    </div>
+                  )}
                 </div>
 
                 {/* Details Directly Below Image */}
@@ -225,7 +243,7 @@ export default function CollectionPage() {
                         name: item.name,
                         rentalPrice: dailyRate,
                         image: item.images[0],
-                        sizes: `SIZE ${item.sizes.join('—')}`,
+                        sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
                       })
                     }
                     className="font-medium text-xs sm:text-[13px] text-[#191C1A] hover:text-[#9E7B4F] active:text-[#9E7B4F] transition-colors leading-tight line-clamp-1 text-left cursor-pointer touch-manipulation"
@@ -234,7 +252,7 @@ export default function CollectionPage() {
                     {item.name}
                   </button>
 
-                  {/* Price Line + Touch-Optimized 'Choose' Button */}
+                  {/* Price Line + Touch-Optimized 'Rent' Button */}
                   <div className="flex items-center justify-between gap-1.5 pt-0.5">
                     <div className="min-w-0">
                       <span className="font-semibold text-xs text-[#191C1A] truncate block">
@@ -242,7 +260,7 @@ export default function CollectionPage() {
                       </span>
                     </div>
 
-                    {/* Touch-Friendly "Choose" Button - Opens Pop-up Modal */}
+                    {/* Touch-Friendly "Rent" Button - Opens Pop-up Modal */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -252,13 +270,13 @@ export default function CollectionPage() {
                           name: item.name,
                           rentalPrice: dailyRate,
                           image: item.images[0],
-                          sizes: `SIZE ${item.sizes.join('—')}`,
+                          sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
                         });
                       }}
                       className="shrink-0 min-h-[34px] px-3.5 py-1.5 bg-[#191C1A] hover:bg-[#9E7B4F] active:bg-[#9E7B4F] text-white text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider rounded-full transition-all shadow-2xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
-                      aria-label={`Choose ${item.name}`}
+                      aria-label={`Rent ${item.name}`}
                     >
-                      Choose
+                      Rent
                     </button>
                   </div>
                 </div>
