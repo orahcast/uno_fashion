@@ -47,7 +47,7 @@ const PROTOCOL_POINTS = [
 ];
 
 export default function ProtocolServicePage() {
-  const [photos, setPhotos] = useState(DEFAULT_PROTOCOL_PHOTOS);
+  const [photos, setPhotos] = useState<typeof DEFAULT_PROTOCOL_PHOTOS>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
@@ -58,7 +58,7 @@ export default function ProtocolServicePage() {
     fetch('/api/protocol-photos')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setPhotos(data);
         }
       })
@@ -158,41 +158,43 @@ export default function ProtocolServicePage() {
       </section>
 
       {/* 2. Slowly Sliding Protocol Photos Marquee */}
-      <section className="pb-12 sm:pb-16 overflow-hidden relative">
-        {/* Soft edge blur gradients */}
-        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-28 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
-        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-28 bg-gradient-to-l from-[#FAF8F5] to-transparent z-10" />
+      {photos.length > 0 && (
+        <section className="pb-12 sm:pb-16 overflow-hidden relative">
+          {/* Soft edge blur gradients */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-28 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-28 bg-gradient-to-l from-[#FAF8F5] to-transparent z-10" />
 
-        <div
-          className="flex animate-marquee gap-4 sm:gap-5 py-2 hover:[animation-play-state:paused]"
-          style={{ animationDuration: '40s' }}
-        >
-          {[...photos, ...photos].map((item, idx) => (
-            <div
-              key={idx}
-              className="w-60 sm:w-72 shrink-0 group bg-white rounded-2xl overflow-hidden border border-[#EAE5DC] shadow-2xs hover:border-[#9E7B4F] transition-all"
-            >
-              <div className="relative aspect-[3/4] w-full bg-neutral-900 overflow-hidden">
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  fill
-                  className="object-cover object-top group-hover:scale-103 transition-transform duration-500 ease-out"
-                  sizes="(max-width: 640px) 240px, 288px"
-                />
+          <div
+            className="flex animate-marquee gap-4 sm:gap-5 py-2 hover:[animation-play-state:paused]"
+            style={{ animationDuration: '40s' }}
+          >
+            {[...photos, ...photos].map((item, idx) => (
+              <div
+                key={idx}
+                className="w-60 sm:w-72 shrink-0 group bg-white rounded-2xl overflow-hidden border border-[#EAE5DC] shadow-2xs hover:border-[#9E7B4F] transition-all"
+              >
+                <div className="relative aspect-[3/4] w-full bg-neutral-900 overflow-hidden">
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover object-top group-hover:scale-103 transition-transform duration-500 ease-out"
+                    sizes="(max-width: 640px) 240px, 288px"
+                  />
+                </div>
+                <div className="p-4 bg-white">
+                  <h3 className="font-serif-luxury text-base font-semibold text-[#191C1A]">
+                    {item.title}
+                  </h3>
+                  <p className="text-[11px] text-[#736E67] mt-0.5 leading-relaxed">
+                    {item.caption}
+                  </p>
+                </div>
               </div>
-              <div className="p-4 bg-white">
-                <h3 className="font-serif-luxury text-base font-semibold text-[#191C1A]">
-                  {item.title}
-                </h3>
-                <p className="text-[11px] text-[#736E67] mt-0.5 leading-relaxed">
-                  {item.caption}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3. Simple 3-Pillar Explanation */}
       <section className="py-12 bg-white border-y border-[#EAE5DC]">

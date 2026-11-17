@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 
 export default function Footer() {
@@ -9,9 +10,24 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
-            <span className="font-serif-luxury text-3xl tracking-[0.16em] block text-white">
-              UNO FASHION AGENCY
-            </span>
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-white shrink-0 p-0.5 border border-[#C4A47C]/50 shadow-xs">
+                <Image
+                  src="/logo.png"
+                  alt="Uno Fashion Agency"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.24em] text-[#C4A47C] font-semibold block">
+                  Kigali Atelier
+                </span>
+                <span className="font-serif-luxury text-2xl tracking-[0.14em] block text-white leading-tight">
+                  UNO FASHION AGENCY
+                </span>
+              </div>
+            </div>
             <p className="text-sm text-[#9C9187] max-w-sm font-light leading-relaxed">
               Tailoring with quiet authority. Bespoke suit rentals, tuxedos, and bridal couture in Kigali, Rwanda.
             </p>

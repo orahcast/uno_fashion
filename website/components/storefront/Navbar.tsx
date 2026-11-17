@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Menu, X, Instagram, Phone, ArrowUpRight } from 'lucide-react';
 
@@ -42,15 +43,26 @@ export default function Navbar() {
           <Link
             href="/"
             prefetch={true}
-            className="flex flex-col items-start group select-none shrink-0"
+            className="flex items-center gap-3 group select-none shrink-0"
             aria-label="Uno Fashion Agency Home"
           >
-            <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-[#C4A47C] font-semibold -mb-0.5">
-              Kigali Atelier
-            </span>
-            <span className="font-serif-luxury text-base sm:text-xl lg:text-2xl tracking-[0.12em] sm:tracking-[0.16em] font-medium text-white group-hover:text-[#E8DEC8] transition-colors whitespace-nowrap">
-              UNO FASHION AGENCY
-            </span>
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-white shrink-0 p-0.5 border border-[#C4A47C]/50 shadow-xs group-hover:border-[#C4A47C] transition-colors">
+              <Image
+                src="/logo.png"
+                alt="Uno Fashion Agency Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-[#C4A47C] font-semibold -mb-0.5">
+                Kigali Atelier
+              </span>
+              <span className="font-serif-luxury text-base sm:text-xl lg:text-2xl tracking-[0.12em] sm:tracking-[0.16em] font-medium text-white group-hover:text-[#E8DEC8] transition-colors whitespace-nowrap">
+                UNO FASHION AGENCY
+              </span>
+            </div>
           </Link>
 
           {/* 2. Center/Right: Desktop Navigation Links (hidden on mobile/tablet resize) */}

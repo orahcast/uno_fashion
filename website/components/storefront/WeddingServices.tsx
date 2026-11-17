@@ -14,14 +14,14 @@ const DEFAULT_SLIDES = [
 ];
 
 export default function WeddingServices() {
-  const [slides, setSlides] = useState(DEFAULT_SLIDES);
+  const [slides, setSlides] = useState<{ src: string; title: string }[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => {
     fetch('/api/protocol-photos')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setSlides(
             data.map((item: { image?: string; src?: string; title: string }) => ({
               src: item.image || item.src || '/images/landing-page-1.jpeg',
@@ -96,47 +96,71 @@ export default function WeddingServices() {
           {/* Left Side: Slowly Sliding Carousel Stack */}
           <div className="lg:col-span-5 relative w-full max-w-sm mx-auto lg:max-w-none">
             <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-md border-3 border-white bg-[#14100E]">
-              {/* Sliding Track */}
-              <div
-                className="flex h-full w-full transition-transform duration-1000 ease-in-out"
-                style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-              >
-                {slides.map((slide, idx) => (
-                  <div key={idx} className="relative min-w-full h-full">
-                    <Image
-                      src={slide.src}
-                      alt={slide.title}
-                      fill
-                      className="object-cover object-top"
-                      sizes="(max-width: 1024px) 100vw, 40vw"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 text-white">
-                      <span className="text-[9px] uppercase tracking-wider text-[#D5B895] font-semibold bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-full inline-block mb-1">
-                        Protocol in Action
-                      </span>
-                      <p className="font-serif-luxury text-base font-medium">
-                        {slide.title}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Slide Indicators */}
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-full">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setActiveSlide(i)}
-                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                      activeSlide === i ? 'w-4 bg-[#C4A47C]' : 'w-1.5 bg-white/40'
-                    }`}
-                    aria-label={`Go to slide ${i + 1}`}
+              {slides.length === 0 ? (
+                <div className="relative w-full h-full flex flex-col justify-end p-6 bg-[#14100E]">
+                  <Image
+                    src="/images/landing-page-1.jpeg"
+                    alt="Uno Fashion Atelier"
+                    fill
+                    className="object-cover object-top opacity-50"
                   />
-                ))}
-              </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="relative z-10 text-white space-y-1">
+                    <span className="text-[9px] uppercase tracking-wider text-[#D5B895] font-semibold bg-black/50 backdrop-blur-xs px-2.5 py-0.5 rounded-full inline-block">
+                      Ceremonial Protocol
+                    </span>
+                    <h3 className="font-serif-luxury text-base sm:text-lg font-medium">
+                      Atelier Distinction
+                    </h3>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Sliding Track */}
+                  <div
+                    className="flex h-full w-full transition-transform duration-1000 ease-in-out"
+                    style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+                  >
+                    {slides.map((slide, idx) => (
+                      <div key={idx} className="relative min-w-full h-full">
+                        <Image
+                          src={slide.src}
+                          alt={slide.title}
+                          fill
+                          className="object-cover object-top"
+                          sizes="(max-width: 1024px) 100vw, 40vw"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute bottom-4 left-4 right-4 text-white">
+                          <span className="text-[9px] uppercase tracking-wider text-[#D5B895] font-semibold bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-full inline-block mb-1">
+                            Protocol in Action
+                          </span>
+                          <p className="font-serif-luxury text-base font-medium">
+                            {slide.title}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Slide Indicators */}
+                  {slides.length > 1 && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-full">
+                      {slides.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setActiveSlide(i)}
+                          className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                            activeSlide === i ? 'w-4 bg-[#C4A47C]' : 'w-1.5 bg-white/40'
+                          }`}
+                          aria-label={`Go to slide ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

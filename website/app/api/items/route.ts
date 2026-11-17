@@ -121,7 +121,7 @@ export async function GET(request: Request) {
 
       const { data, error } = await query.order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const mapped = data
           .filter((item) => !deletedIds.includes(item.id))
           .map((item) => ({
@@ -196,7 +196,11 @@ export async function DELETE(request: Request) {
     if (isSupabaseConfigured()) {
       try {
         const supabase = await createClient();
-        await supabase.from('items').delete().eq('id', id);
+        const { error } = await supabase.from('items').delete().eq('id', id);
+        if (error) {
+          console.warn('Supabase hard delete failed, marking is_archived:', error);
+          await supabase.from('items').update({ is_archived: true }).eq('id', id);
+        }
       } catch (err) {
         console.error('Supabase error deleting item:', err);
       }

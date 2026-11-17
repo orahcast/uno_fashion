@@ -4,7 +4,7 @@ import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://unofashion.rw';
 
-  const staticPages = [
+  return [
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -24,14 +24,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85,
     },
   ];
-
-  const itemPages = INITIAL_ITEMS.map((item) => ({
-    url: `${baseUrl}/collection/${item.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }));
-
-  return [...staticPages, ...itemPages];
 }
 

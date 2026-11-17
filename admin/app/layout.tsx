@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 
@@ -278,6 +279,9 @@ export default function AdminRootLayout({
     <html lang="en" className={`${cormorant.variable} ${plusJakarta.variable}`}>
       <head>
         <title>Uno Fashion · Inventory Central</title>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
       <body className="min-h-screen bg-[#FAF8F5] flex flex-col lg:flex-row font-sans-luxury text-[#191C1A] antialiased">
         {/* Desktop Atelier Dark Sidebar */}
@@ -285,8 +289,15 @@ export default function AdminRootLayout({
           <div className="space-y-7">
             {/* Atelier Brand */}
             <Link href="/" prefetch={true} className="flex items-center space-x-3 px-2 pt-1">
-              <div className="w-9 h-9 rounded-md bg-[#C4A47C] text-[#14100E] flex items-center justify-center font-serif-luxury font-bold text-lg shadow-xs">
-                U
+              <div className="relative w-9 h-9 rounded-full bg-white p-0.5 shadow-xs shrink-0 overflow-hidden border border-[#C4A47C]/60 flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="Uno Fashion Logo"
+                  fill
+                  className="object-contain p-0.5"
+                  sizes="36px"
+                  priority
+                />
               </div>
               <div>
                 <span className="font-serif-luxury text-lg tracking-[0.1em] font-semibold block text-white leading-tight">
@@ -403,8 +414,14 @@ export default function AdminRootLayout({
                     onClick={() => setSidebarOpen(false)}
                     className="flex items-center space-x-3"
                   >
-                    <div className="w-9 h-9 rounded-md bg-[#C4A47C] text-[#14100E] flex items-center justify-center font-serif-luxury font-bold text-lg shadow-xs">
-                      U
+                    <div className="relative w-9 h-9 rounded-full bg-white p-0.5 shadow-xs shrink-0 overflow-hidden border border-[#C4A47C]/60 flex items-center justify-center">
+                      <Image
+                        src="/logo.png"
+                        alt="Uno Fashion Logo"
+                        fill
+                        className="object-contain p-0.5"
+                        sizes="36px"
+                      />
                     </div>
                     <div>
                       <span className="font-serif-luxury text-lg tracking-[0.1em] font-semibold block text-white leading-tight">

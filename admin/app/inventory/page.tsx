@@ -151,6 +151,22 @@ export default function InventoryCentralPage() {
         }
       }
 
+      // Direct Supabase delete from browser to trigger real-time updates on website
+      try {
+        const supabase = createClient();
+        supabase
+          .from('items')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => {
+            if (error) {
+              supabase.from('items').update({ is_archived: true }).eq('id', id);
+            }
+          });
+      } catch (e) {
+        console.error('Supabase client delete error:', e);
+      }
+
       fetch(`/api/items?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       }).catch(console.error);

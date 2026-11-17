@@ -113,7 +113,7 @@ export async function GET(request: Request) {
 
       const { data, error } = await query.order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const mapped = data
           .filter((item) => !deletedIds.includes(item.id))
           .map((item) => ({
@@ -297,7 +297,8 @@ export async function DELETE(request: Request) {
         const { error } = await supabase.from('items').delete().eq('id', id);
 
         if (error) {
-          console.error('Admin Supabase item delete error:', error);
+          console.warn('Admin Supabase item delete error, falling back to archive:', error);
+          await supabase.from('items').update({ is_archived: true }).eq('id', id);
         }
       } catch (err) {
         console.error('Admin Supabase error deleting item:', err);

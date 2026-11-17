@@ -146,17 +146,26 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
 
             return (
               <div key={item.id} className="group flex flex-col">
-                {/* Image Container with Link */}
-                <div className="relative aspect-[3/4] w-full bg-[#EAE8E4] overflow-hidden rounded-xl shadow-2xs hover:shadow-md transition-all group-hover:-translate-y-0.5">
-                  <Link href={`/collection/${item.slug}`} className="block w-full h-full">
-                    <Image
-                      src={item.images[0] || '/images/hero-men.jpg'}
-                      alt={item.name}
-                      fill
-                      className="object-cover object-top group-hover:scale-104 transition-transform duration-500 ease-out"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    />
-                  </Link>
+                {/* Image Container with Modal Trigger */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedSuit(cardModalSuit)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedSuit(cardModalSuit);
+                    }
+                  }}
+                  className="relative aspect-[3/4] w-full bg-[#EAE8E4] overflow-hidden rounded-xl shadow-2xs hover:shadow-md transition-all group-hover:-translate-y-0.5 cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#9E7B4F]"
+                >
+                  <Image
+                    src={item.images[0] || '/images/hero-men.jpg'}
+                    alt={item.name}
+                    fill
+                    className="object-cover object-top group-hover:scale-104 transition-transform duration-500 ease-out"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  />
 
                   {/* Badge */}
                   <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[9px] font-semibold text-[#191C1A] shadow-xs pointer-events-none">
@@ -172,13 +181,14 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
 
                 {/* Details */}
                 <div className="pt-3 flex flex-col space-y-1">
-                  <Link
-                    href={`/collection/${item.slug}`}
-                    className="font-medium text-sm text-[#191C1A] hover:text-[#9E7B4F] transition-colors leading-tight line-clamp-1"
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSuit(cardModalSuit)}
+                    className="font-medium text-sm text-[#191C1A] hover:text-[#9E7B4F] transition-colors leading-tight line-clamp-1 text-left cursor-pointer"
                     title={item.name}
                   >
                     {item.name}
-                  </Link>
+                  </button>
 
                   <div className="flex items-baseline justify-between pt-0.5">
                     <span className="font-semibold text-xs sm:text-sm text-[#191C1A]">

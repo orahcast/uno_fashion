@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -67,13 +68,25 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white border border-[#E8E4DC] p-8 shadow-xl rounded-sm space-y-6">
-        <div className="text-center space-y-1">
-          <span className="font-serif-luxury text-3xl tracking-[0.16em] block text-[#191C1A]">
-            UNO FASHION AGENCY
-          </span>
-          <span className="text-[10px] uppercase tracking-[0.22em] text-[#9E7B4F] font-semibold block">
-            ATELIER MANAGER ACCESS
-          </span>
+        <div className="text-center space-y-2 flex flex-col items-center">
+          <div className="relative w-16 h-16 rounded-full bg-white p-1 shadow-xs overflow-hidden border border-[#C4A47C]/60 flex items-center justify-center mb-1">
+            <Image
+              src="/logo.png"
+              alt="Uno Fashion Logo"
+              fill
+              className="object-contain p-1"
+              sizes="64px"
+              priority
+            />
+          </div>
+          <div>
+            <span className="font-serif-luxury text-3xl tracking-[0.16em] block text-[#191C1A]">
+              UNO FASHION AGENCY
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-[#9E7B4F] font-semibold block">
+              ATELIER MANAGER ACCESS
+            </span>
+          </div>
         </div>
 
         {errorMessage && (

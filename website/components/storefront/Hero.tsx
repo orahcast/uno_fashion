@@ -14,7 +14,7 @@ interface HeroConfig {
 }
 
 const DEFAULT_CONFIG: HeroConfig = {
-  image: '/images/landing-page-3.jpeg',
+  image: '/images/hero-men.jpg',
   alt: 'Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali',
   headlinePrefix: 'TAILORING — WITH',
   headlineHighlight: 'QUIET AUTHORITY',

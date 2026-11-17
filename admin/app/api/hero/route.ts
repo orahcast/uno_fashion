@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 const DATA_FILE = path.join(process.cwd(), '..', 'website', 'lib', 'data', 'hero-config.json');
 
 const DEFAULT_CONFIG = {
-  image: '/images/landing-page-3.jpeg',
+  image: '/images/hero-men.jpg',
   alt: 'Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali',
   headlinePrefix: 'TAILORING — WITH',
   headlineHighlight: 'QUIET AUTHORITY',

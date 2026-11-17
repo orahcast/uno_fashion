@@ -41,7 +41,20 @@ const DEFAULT_PHOTOS: ProtocolPhoto[] = [
 ];
 
 export default function ProtocolServiceAdminPage() {
-  const [photos, setPhotos] = useState<ProtocolPhoto[]>(DEFAULT_PHOTOS);
+  const [photos, setPhotos] = useState<ProtocolPhoto[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('uno_protocol_photos');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,12 +69,42 @@ export default function ProtocolServiceAdminPage() {
     fetch('/api/protocol-photos')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setPhotos(data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('uno_protocol_photos', JSON.stringify(data));
+          }
         }
       })
       .catch((err) => console.error('Error fetching protocol photos:', err))
       .finally(() => setLoading(false));
+
+    // Supabase Realtime: sync protocol photos live across tabs
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:admin_protocol_photos')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.protocol_photos',
+        },
+        (payload: any) => {
+          if (payload.new && Array.isArray(payload.new.value)) {
+            setPhotos(payload.new.value);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('uno_protocol_photos', JSON.stringify(payload.new.value));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -71,7 +114,24 @@ export default function ProtocolServiceAdminPage() {
 
   const syncPhotos = async (updated: ProtocolPhoto[]) => {
     setPhotos(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('uno_protocol_photos', JSON.stringify(updated));
+    }
+
     try {
+      // Direct Supabase upsert from client for instant Realtime sync
+      const supabase = createClient();
+      supabase
+        .from('site_settings')
+        .upsert({
+          key: 'protocol_photos',
+          value: updated,
+          updated_at: new Date().toISOString(),
+        })
+        .then(({ error }) => {
+          if (error) console.error('Client Supabase photos save error:', error);
+        });
+
       await fetch('/api/protocol-photos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -272,68 +332,82 @@ export default function ProtocolServiceAdminPage() {
       </div>
 
       {/* Photo Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {photos.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white border border-[#E8E4DC] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col"
-          >
-            {/* Image Preview */}
-            <div className="relative aspect-[3/4] w-full bg-[#14100E] overflow-hidden group">
-              <Image
-                src={item.image}
-                alt={item.title}
-                fill
-                className="object-cover object-top group-hover:scale-102 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              />
-
-              {/* Quick Image Upload Button overlay */}
-              <label className="absolute bottom-2 right-2 bg-black/75 hover:bg-black text-white p-2 rounded-full cursor-pointer shadow-md backdrop-blur-xs transition-colors">
-                <Upload className="w-4 h-4 text-[#C4A47C]" />
-                <input
-                  type="file"
-                  accept="image/*,.heic,.HEIC,.heif,.HEIF"
-                  onChange={(e) => handleFileUpload(e, item.id)}
-                  className="hidden"
+      {loading ? (
+        <div className="bg-white border border-[#E8E4DC] rounded-xl p-12 text-center text-xs text-[#8C8075]">
+          Loading protocol pictures...
+        </div>
+      ) : photos.length === 0 ? (
+        <div className="bg-white border border-[#E8E4DC] rounded-xl p-12 text-center space-y-3">
+          <Sparkles className="w-8 h-8 text-[#9E7B4F] mx-auto opacity-60" />
+          <h3 className="font-serif-luxury text-lg text-[#191C1A]">No Protocol Pictures</h3>
+          <p className="text-xs text-[#6B726A] max-w-sm mx-auto">
+            All protocol service showcase photos have been cleared. Click &quot;Add Picture&quot; above to add new high-resolution imagery.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {photos.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white border border-[#E8E4DC] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col"
+            >
+              {/* Image Preview */}
+              <div className="relative aspect-[3/4] w-full bg-[#14100E] overflow-hidden group">
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  className="object-cover object-top group-hover:scale-102 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
-              </label>
-            </div>
 
-            {/* Content Details */}
-            <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-              <div>
-                <h3 className="font-serif-luxury text-lg font-semibold text-[#191C1A] leading-snug">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-[#6B726A] mt-1 leading-relaxed">
-                  {item.caption}
-                </p>
+                {/* Quick Image Upload Button overlay */}
+                <label className="absolute bottom-2 right-2 bg-black/75 hover:bg-black text-white p-2 rounded-full cursor-pointer shadow-md backdrop-blur-xs transition-colors">
+                  <Upload className="w-4 h-4 text-[#C4A47C]" />
+                  <input
+                    type="file"
+                    accept="image/*,.heic,.HEIC,.heif,.HEIF"
+                    onChange={(e) => handleFileUpload(e, item.id)}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
-              <div className="pt-3 border-t border-[#F0ECE3] flex items-center justify-between text-xs">
-                <button
-                  type="button"
-                  onClick={() => openEditModal(item)}
-                  className="text-[#9E7B4F] hover:text-[#191C1A] font-medium flex items-center gap-1 cursor-pointer"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                  <span>Edit Details</span>
-                </button>
+              {/* Content Details */}
+              <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-serif-luxury text-lg font-semibold text-[#191C1A] leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-[#6B726A] mt-1 leading-relaxed">
+                    {item.caption}
+                  </p>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleDelete(item.id, item.title)}
-                  className="text-red-500 hover:text-red-700 font-medium cursor-pointer"
-                  title="Remove picture"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="pt-3 border-t border-[#F0ECE3] flex items-center justify-between text-xs">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(item)}
+                    className="text-[#9E7B4F] hover:text-[#191C1A] font-medium flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit Details</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item.id, item.title)}
+                    className="text-red-500 hover:text-red-700 font-medium cursor-pointer"
+                    title="Remove picture"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Add / Edit Picture Modal */}
       {isModalOpen && (

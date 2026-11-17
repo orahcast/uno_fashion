@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { createClient } from '@/lib/supabase/server';
 
 export interface ProtocolPhoto {
@@ -35,6 +37,43 @@ const DEFAULT_PROTOCOL_PHOTOS: ProtocolPhoto[] = [
   },
 ];
 
+function getPhotosFilePath() {
+  const possiblePaths = [
+    path.join(process.cwd(), '..', 'website', 'lib', 'data', 'protocol-photos.json'),
+    path.join(process.cwd(), 'website', 'lib', 'data', 'protocol-photos.json'),
+    path.join(process.cwd(), 'lib', 'data', 'protocol-photos.json'),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return possiblePaths[0];
+}
+
+function getLocalPhotos(): ProtocolPhoto[] | null {
+  try {
+    const f = getPhotosFilePath();
+    if (fs.existsSync(f)) {
+      const content = fs.readFileSync(f, 'utf-8');
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error('Error reading protocol-photos.json:', err);
+  }
+  return null;
+}
+
+function saveLocalPhotos(photos: ProtocolPhoto[]) {
+  try {
+    const f = getPhotosFilePath();
+    fs.writeFileSync(f, JSON.stringify(photos, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('Error saving protocol-photos.json:', err);
+    return false;
+  }
+}
+
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   return Boolean(url && !url.includes('placeholder-project'));
@@ -50,7 +89,7 @@ export async function GET() {
         .eq('key', 'protocol_photos')
         .maybeSingle();
 
-      if (!error && Array.isArray(data?.value) && data.value.length > 0) {
+      if (!error && data && Array.isArray(data.value)) {
         return NextResponse.json(data.value);
       }
     } catch (err) {
@@ -58,7 +97,12 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json(DEFAULT_PROTOCOL_PHOTOS);
+  const local = getLocalPhotos();
+  if (local !== null) {
+    return NextResponse.json(local);
+  }
+
+  return NextResponse.json([]);
 }
 
 export async function POST(request: Request) {
@@ -70,6 +114,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Save locally
+    saveLocalPhotos(body);
 
     if (isSupabaseConfigured()) {
       try {
@@ -97,4 +144,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

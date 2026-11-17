@@ -25,7 +25,7 @@ interface HeroConfig {
 }
 
 const DEFAULT_CONFIG: HeroConfig = {
-  image: '/images/landing-page-3.jpeg',
+  image: '/images/hero-men.jpg',
   alt: 'Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali',
   headlinePrefix: 'TAILORING — WITH',
   headlineHighlight: 'QUIET AUTHORITY',
@@ -35,24 +35,6 @@ const DEFAULT_CONFIG: HeroConfig = {
 
 // Curated Photoshoot Presets from Atelier shoots
 const PHOTOSHOOTS = [
-  {
-    id: 'look-3',
-    name: 'Photoshoot Look 3',
-    tag: 'Active Default',
-    src: '/images/landing-page-3.jpeg',
-  },
-  {
-    id: 'look-2',
-    name: 'Photoshoot Look 2',
-    tag: 'Tuxedo & Ivory',
-    src: '/images/landing-page-2.jpeg',
-  },
-  {
-    id: 'look-1',
-    name: 'Photoshoot Look 1',
-    tag: 'Bold Editorial',
-    src: '/images/landing-page-1.jpeg',
-  },
   {
     id: 'look-4',
     name: 'Executive Look',
@@ -322,7 +304,7 @@ export default function HeroLandingManagerPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-w-sm">
                 {PHOTOSHOOTS.map((shoot) => {
                   const isSelected = selectedImage === shoot.src;
                   return (
