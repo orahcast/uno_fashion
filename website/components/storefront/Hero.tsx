@@ -98,6 +98,11 @@ export default function Hero() {
         {/* Left Column: Exactly Half Width (50%) */}
         <div className="w-full z-10 flex flex-col justify-center px-6 sm:px-10 lg:pl-16 lg:pr-10 py-12 md:py-8">
           <div className="space-y-6 max-w-xl -translate-y-3 md:-translate-y-8">
+            {/* Atelier Brand Eyebrow */}
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.24em] text-[#C4A47C] font-semibold block">
+              Uno Fashion Agency · Kigali
+            </span>
+
             {/* Headline with Em-dash and Highlighted Word */}
             <h1 className="font-serif-luxury text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-normal uppercase tracking-tight leading-[1.08] text-white">
               {config.headlinePrefix} <br />

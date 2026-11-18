@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://unofashion.rw';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.unofashionagency.com';
 
   return [
     {

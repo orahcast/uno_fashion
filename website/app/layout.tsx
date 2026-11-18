@@ -28,10 +28,13 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://unofashion.rw'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.unofashionagency.com'),
   title: {
     default: 'UNO FASHION AGENCY | Tailoring With Quiet Authority · Kigali Rentals',
     template: '%s | UNO FASHION AGENCY',
+  },
+  alternates: {
+    canonical: 'https://www.unofashionagency.com',
   },
   description:
     'Uno Fashion Agency — Bespoke suit rentals, tuxedos, and wedding protocol services in Kigali, Rwanda. Book online, try on at our atelier, and make an indelible impression.',
@@ -49,7 +52,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_RW',
-    url: 'https://unofashion.rw',
+    url: 'https://www.unofashionagency.com',
     siteName: 'Uno Fashion Agency',
     title: 'UNO FASHION AGENCY | Tailoring With Quiet Authority · Kigali Rentals',
     description:
@@ -87,6 +90,65 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://www.unofashionagency.com/#website',
+      url: 'https://www.unofashionagency.com',
+      name: 'Uno Fashion Agency',
+      description:
+        'Bespoke suit rentals, tuxedos, and wedding protocol services in Kigali, Rwanda.',
+      publisher: {
+        '@id': 'https://www.unofashionagency.com/#organization',
+      },
+    },
+    {
+      '@type': 'ClothingStore',
+      '@id': 'https://www.unofashionagency.com/#organization',
+      name: 'Uno Fashion Agency Ltd',
+      url: 'https://www.unofashionagency.com',
+      logo: 'https://www.unofashionagency.com/icons/icon-512.png',
+      image: 'https://www.unofashionagency.com/images/hero-men.jpg',
+      description:
+        'Uno Fashion Agency — Bespoke suit rentals, tuxedos, and wedding protocol services in Kigali, Rwanda.',
+      telephone: '+250783036628',
+      email: 'ufashionagency@gmail.com',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'KN 74 St, Nyarugenge',
+        addressLocality: 'Kigali',
+        addressCountry: 'RW',
+      },
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: -1.9536,
+        longitude: 30.0605,
+      },
+      openingHoursSpecification: [
+        {
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+          ],
+          opens: '08:00',
+          closes: '20:00',
+        },
+      ],
+      sameAs: [
+        'https://www.instagram.com/uno_fashion_agency_ltd',
+        'https://www.tiktok.com/@unofashionagency',
+      ],
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -95,6 +157,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cormorant.variable} ${plusJakarta.variable}`}>
       <body className="min-h-screen font-sans-luxury text-[#191C1A] antialiased bg-[#FAF8F5] selection:bg-[#14100E] selection:text-[#FAF8F5] flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <Navbar />
         <main className="flex-grow">{children}</main>
         <Footer />
