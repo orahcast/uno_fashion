@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ArrowRight, Phone, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Phone, CheckCircle2, Instagram, ArrowUpRight } from 'lucide-react';
+import { TikTokIcon } from '@/components/storefront/Icons';
 import { createClient } from '@/lib/supabase/client';
 
 const DEFAULT_PROTOCOL_PHOTOS = [
@@ -155,6 +156,30 @@ export default function ProtocolServicePage() {
         <p className="text-xs sm:text-sm text-[#736E67] font-light max-w-xl mx-auto mt-2 leading-relaxed">
           Ceremonial coordination, bridal party wardrobe alignment, and day-of suite dressing for weddings and distinguished events in Kigali.
         </p>
+
+        {/* Protocol Social Quick Links */}
+        <div className="flex flex-wrap items-center justify-center gap-2.5 mt-5">
+          <a
+            href="https://www.instagram.com/reel/DHQODhAt-Jt/?evlk=aDM2OGU1YThtNmt2"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE4] text-[#191C1A] text-xs font-semibold border border-[#D5CFCE] transition-all shadow-2xs hover:scale-102"
+          >
+            <Instagram className="w-3.5 h-3.5 text-[#9E7B4F]" />
+            <span>Watch Protocol on Instagram</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9E7B4F]" />
+          </a>
+          <a
+            href="https://vt.tiktok.com/ZSpncSG5R/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#F2ECE4] text-[#191C1A] text-xs font-semibold border border-[#D5CFCE] transition-all shadow-2xs hover:scale-102"
+          >
+            <TikTokIcon className="w-3.5 h-3.5 text-[#9E7B4F]" />
+            <span>Official TikTok</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9E7B4F]" />
+          </a>
+        </div>
       </section>
 
       {/* 2. Slowly Sliding Protocol Photos Marquee */}
@@ -310,7 +335,7 @@ export default function ProtocolServicePage() {
                 </button>
               </div>
 
-              <div className="pt-2 text-center">
+              <div className="pt-2 text-center space-y-2">
                 <a
                   href={`tel:+${cleanPhone}`}
                   className="inline-flex items-center gap-1.5 text-xs text-[#736E67] hover:text-[#191C1A]"
@@ -318,6 +343,27 @@ export default function ProtocolServicePage() {
                   <Phone className="w-3 h-3 text-[#9E7B4F]" />
                   <span>Or call concierge: +250 783 036 628</span>
                 </a>
+                <div className="flex items-center justify-center gap-3 pt-2 border-t border-[#EAE4DC] text-xs text-[#736E67]">
+                  <a
+                    href="https://www.instagram.com/reel/DHQODhAt-Jt/?evlk=aDM2OGU1YThtNmt2"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-[#191C1A] font-medium transition-colors"
+                  >
+                    <Instagram className="w-3 h-3 text-[#9E7B4F]" />
+                    <span>Protocol Video</span>
+                  </a>
+                  <span>·</span>
+                  <a
+                    href="https://vt.tiktok.com/ZSpncSG5R/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-[#191C1A] font-medium transition-colors"
+                  >
+                    <TikTokIcon className="w-3 h-3 text-[#9E7B4F]" />
+                    <span>Uno TikTok</span>
+                  </a>
+                </div>
               </div>
             </form>
           )}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Instagram } from 'lucide-react';
+import { TikTokIcon } from './Icons';
 
 export default function Footer() {
   return (
@@ -29,8 +30,43 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-[#9C9187] max-w-sm font-light leading-relaxed">
-              Tailoring with quiet authority. Bespoke suit rentals, tuxedos, and bridal couture in Kigali, Rwanda.
+              Tailoring with quiet authority. Bespoke suit rentals, tuxedos, and bridal protocol in Kigali, Rwanda.
             </p>
+
+            {/* Quick Social Badges */}
+            <div className="flex items-center gap-2 pt-2">
+              <a
+                href="https://www.instagram.com/uno_fashion_agency_ltd"
+                target="_blank"
+                rel="noreferrer"
+                title="Uno Suits & Atelier Instagram"
+                aria-label="Uno Suits Instagram"
+                className="w-8 h-8 rounded-full bg-[#1F1916] border border-[#2E251F] hover:border-[#C4A47C] hover:text-[#C4A47C] flex items-center justify-center text-[#B8ADA2] transition-colors"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://www.instagram.com/reel/DHQODhAt-Jt/?evlk=aDM2OGU1YThtNmt2"
+                target="_blank"
+                rel="noreferrer"
+                title="Uno Wedding Protocol Instagram"
+                aria-label="Uno Protocol Instagram"
+                className="px-2.5 h-8 rounded-full bg-[#1F1916] border border-[#2E251F] hover:border-[#C4A47C] hover:text-[#C4A47C] flex items-center gap-1.5 text-[10px] text-[#B8ADA2] transition-colors"
+              >
+                <Instagram className="w-3 h-3 text-[#C4A47C]" />
+                <span>Protocol IG</span>
+              </a>
+              <a
+                href="https://vt.tiktok.com/ZSpncSG5R/"
+                target="_blank"
+                rel="noreferrer"
+                title="Uno Fashion Official TikTok"
+                aria-label="Uno TikTok"
+                className="w-8 h-8 rounded-full bg-[#1F1916] border border-[#2E251F] hover:border-[#C4A47C] hover:text-[#C4A47C] flex items-center justify-center text-[#B8ADA2] transition-colors"
+              >
+                <TikTokIcon className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
           {/* Visit */}
@@ -57,25 +93,55 @@ export default function Footer() {
                 </a>
               </p>
               <p>+250 783 036 628</p>
-              <div className="flex items-center space-x-4 pt-1">
-                <a
-                  href="https://www.instagram.com/uno_fashion_agency_ltd"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center space-x-1 hover:text-white transition-colors"
-                >
-                  <span>Instagram</span>
-                  <ArrowUpRight className="w-3 h-3" />
-                </a>
-                <a
-                  href="https://wa.me/250783036628"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center space-x-1 hover:text-white transition-colors"
-                >
-                  <span>WhatsApp</span>
-                  <ArrowUpRight className="w-3 h-3" />
-                </a>
+              
+              <div className="pt-2 border-t border-[#2A221D] space-y-1.5">
+                <span className="text-[10px] uppercase tracking-[0.16em] text-[#C4A47C] font-semibold block">
+                  Official Channels
+                </span>
+                <div>
+                  <a
+                    href="https://www.instagram.com/uno_fashion_agency_ltd"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center space-x-1 hover:text-white transition-colors text-[11px]"
+                  >
+                    <span>Suits &amp; Atelier IG</span>
+                    <ArrowUpRight className="w-3 h-3 text-[#C4A47C]" />
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="https://www.instagram.com/reel/DHQODhAt-Jt/?evlk=aDM2OGU1YThtNmt2"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center space-x-1 hover:text-white transition-colors text-[11px]"
+                  >
+                    <span>Wedding Protocol IG</span>
+                    <ArrowUpRight className="w-3 h-3 text-[#C4A47C]" />
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="https://vt.tiktok.com/ZSpncSG5R/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center space-x-1 hover:text-white transition-colors text-[11px]"
+                  >
+                    <span>Uno Agency TikTok</span>
+                    <ArrowUpRight className="w-3 h-3 text-[#C4A47C]" />
+                  </a>
+                </div>
+                <div className="pt-0.5">
+                  <a
+                    href="https://wa.me/250783036628"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center space-x-1 hover:text-white text-[#25D366] transition-colors text-[11px]"
+                  >
+                    <span>WhatsApp Concierge</span>
+                    <ArrowUpRight className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

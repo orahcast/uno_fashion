@@ -244,11 +244,10 @@ export default function CustomersPage() {
         <button
           type="button"
           onClick={() => setFilterTab('ALL')}
-          className={`bg-white border rounded-lg p-5 text-left transition-all ${
-            filterTab === 'ALL'
-              ? 'border-[#9E7B4F] ring-1 ring-[#9E7B4F]/20'
-              : 'border-[#E8E4DC] hover:border-[#9E7B4F]'
-          }`}
+          className={`bg-white border rounded-lg p-5 text-left transition-all ${filterTab === 'ALL'
+            ? 'border-[#9E7B4F] ring-1 ring-[#9E7B4F]/20'
+            : 'border-[#E8E4DC] hover:border-[#9E7B4F]'
+            }`}
         >
           <div className="flex items-center justify-between mb-2">
             <BookOpen className="w-4 h-4 text-[#9E7B4F]" />
@@ -263,11 +262,10 @@ export default function CustomersPage() {
         <button
           type="button"
           onClick={() => setFilterTab('OUT')}
-          className={`bg-white border rounded-lg p-5 text-left transition-all ${
-            filterTab === 'OUT'
-              ? 'border-[#1E40AF] ring-1 ring-[#1E40AF]/20'
-              : 'border-[#E8E4DC] hover:border-[#1E40AF]'
-          }`}
+          className={`bg-white border rounded-lg p-5 text-left transition-all ${filterTab === 'OUT'
+            ? 'border-[#1E40AF] ring-1 ring-[#1E40AF]/20'
+            : 'border-[#E8E4DC] hover:border-[#1E40AF]'
+            }`}
         >
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-4 h-4 text-[#1E40AF]" />
@@ -306,11 +304,10 @@ export default function CustomersPage() {
               key={pill.key}
               type="button"
               onClick={() => setFilterTab(pill.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filterTab === pill.key
-                  ? 'bg-[#9E7B4F] text-white font-semibold'
-                  : 'bg-[#F2ECE1] text-[#52574F] hover:text-[#191C1A]'
-              }`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filterTab === pill.key
+                ? 'bg-[#9E7B4F] text-white font-semibold'
+                : 'bg-[#F2ECE1] text-[#52574F] hover:text-[#191C1A]'
+                }`}
             >
               {pill.label}
             </button>

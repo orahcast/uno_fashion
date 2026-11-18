@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Phone, ChevronRight } from 'lucide-react';
+import { Phone, ChevronRight, Instagram } from 'lucide-react';
+import { TikTokIcon } from './Icons';
 import { createClient } from '@/lib/supabase/client';
 
 interface HeroConfig {
@@ -145,6 +146,47 @@ export default function Hero() {
                   </span>
                 </div>
               </a>
+            </div>
+
+            {/* Direct Social Media Channels Bar (100% accessible on mobile & desktop) */}
+            <div className="pt-4 mt-2 border-t border-[#2A221C]">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#C4A47C] font-semibold block mb-2.5">
+                Official Channels
+              </span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                <a
+                  href="https://www.instagram.com/uno_fashion_agency_ltd"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1C1613] hover:bg-[#2A201A] border border-[#332822] hover:border-[#C4A47C] text-xs text-[#FAF8F5] transition-all shadow-2xs active:scale-95"
+                >
+                  <Instagram className="w-3.5 h-3.5 text-[#C4A47C]" />
+                  <span>Suits Atelier IG</span>
+                </a>
+
+                <a
+                  href="https://www.instagram.com/reel/DHQODhAt-Jt/?evlk=aDM2OGU1YThtNmt2"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1C1613] hover:bg-[#2A201A] border border-[#332822] hover:border-[#C4A47C] text-xs text-[#FAF8F5] transition-all shadow-2xs active:scale-95"
+                >
+                  <Instagram className="w-3.5 h-3.5 text-[#C4A47C]" />
+                  <span>Protocol IG</span>
+                  <span className="text-[9px] uppercase px-1 py-0.2 rounded-full bg-[#C4A47C]/20 text-[#C4A47C] font-semibold border border-[#C4A47C]/40">
+                    VIP
+                  </span>
+                </a>
+
+                <a
+                  href="https://vt.tiktok.com/ZSpncSG5R/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1C1613] hover:bg-[#2A201A] border border-[#332822] hover:border-[#C4A47C] text-xs text-[#FAF8F5] transition-all shadow-2xs active:scale-95"
+                >
+                  <TikTokIcon className="w-3.5 h-3.5 text-[#C4A47C]" />
+                  <span>Official TikTok</span>
+                </a>
+              </div>
             </div>
 
           </div>
