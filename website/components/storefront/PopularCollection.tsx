@@ -7,6 +7,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { RentalItem } from '@/lib/types';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { formatRWF } from '@/lib/utils';
+import { formatUSD, DEFAULT_USD_RATE } from '@/lib/currency';
 import RentItemModal, { RentModalSuit } from './RentItemModal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -18,9 +19,11 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
   const [items, setItems] = useState<RentalItem[]>(initialPropItems || []);
   const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns'>('all');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
+  const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
 
   // Fetch live items from the database/API & subscribe to real-time changes
   useEffect(() => {
+    // 1. Fetch catalog items
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -29,6 +32,16 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         }
       })
       .catch((err) => console.error('Error loading popular collection:', err));
+
+    // 2. Fetch USD currency exchange rate
+    fetch('/api/currency')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.rate === 'number' && data.rate > 0) {
+          setExchangeRate(data.rate);
+        }
+      })
+      .catch((err) => console.error('Error fetching currency rate:', err));
 
     // Supabase Realtime: instantly update collection when item is added/edited/deleted
     const supabase = createClient();
@@ -50,8 +63,26 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
       )
       .subscribe();
 
+    // Supabase Realtime: currency rate changes
+    const currencyChannel = supabase
+      .channel('realtime:currency_rate_popular')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.usd_exchange_rate' },
+        (payload: any) => {
+          if (payload.new && payload.new.value) {
+            const r = typeof payload.new.value === 'number' ? payload.new.value : payload.new.value.rate;
+            if (typeof r === 'number' && r > 0) {
+              setExchangeRate(r);
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(currencyChannel);
     };
   }, []);
 
@@ -152,6 +183,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
               rentalPrice: item.rentalPrice,
               image: item.images[0] || '/images/hero-men.jpg',
               sizes: (item.sizes && item.sizes.length > 0) ? item.sizes.join(' · ') : 'Tailored to measure',
+              category: item.category,
             };
 
             return (
@@ -201,10 +233,15 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
                   </button>
 
                   <div className="flex items-baseline justify-between pt-0.5">
-                    <span className="font-semibold text-xs sm:text-sm text-[#191C1A]">
-                      {formatRWF(item.rentalPrice)}
-                      <span className="text-[10px] text-[#7B8079] font-normal ml-0.5">/ day</span>
-                    </span>
+                    <div>
+                      <span className="font-semibold text-xs sm:text-sm text-[#191C1A]">
+                        {formatRWF(item.rentalPrice)}
+                        <span className="text-[10px] text-[#7B8079] font-normal ml-0.5">/ day</span>
+                      </span>
+                      <span className="text-[10px] text-[#8C8075] font-medium block">
+                        ~${formatUSD(item.rentalPrice, exchangeRate)} USD
+                      </span>
+                    </div>
 
                     <button
                       type="button"
@@ -232,6 +269,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
       <RentItemModal
         suit={selectedSuit}
         onClose={() => setSelectedSuit(null)}
+        exchangeRate={exchangeRate}
       />
     </section>
   );

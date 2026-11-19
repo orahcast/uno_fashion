@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, Check, MessageCircle } from 'lucide-react';
 import { formatRWF } from '@/lib/utils';
+import { formatUSD, DEFAULT_USD_RATE } from '@/lib/currency';
 
 export interface RentModalSuit {
   id: string;
@@ -11,14 +12,17 @@ export interface RentModalSuit {
   rentalPrice: number;
   image: string;
   sizes?: string;
+  category?: string;
 }
 
 interface RentItemModalProps {
   suit: RentModalSuit | null;
   onClose: () => void;
+  exchangeRate?: number;
 }
 
-export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
+export default function RentItemModal({ suit, onClose, exchangeRate: propRate }: RentItemModalProps) {
+  const [exchangeRate, setExchangeRate] = useState<number>(propRate || DEFAULT_USD_RATE);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -26,6 +30,21 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
   const [rentalDays, setRentalDays] = useState<number | string>(1);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (propRate) {
+      setExchangeRate(propRate);
+      return;
+    }
+    fetch('/api/currency')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.rate === 'number' && data.rate > 0) {
+          setExchangeRate(data.rate);
+        }
+      })
+      .catch((err) => console.error('Error fetching currency rate:', err));
+  }, [propRate]);
 
   // Optional Measurements State (Pant Waist: 28-40, Pant Length: 26-38, Suit Size: 38-60)
   const [showMeasurements, setShowMeasurements] = useState(false);
@@ -47,31 +66,41 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
   if (!suit) return null;
 
+  const isTuxedo = Boolean(
+    suit.category?.toLowerCase().includes('tuxedo') ||
+    suit.name.toLowerCase().includes('tuxedo')
+  );
+
+  const minSuitSize = 44;
+  const maxSuitSize = isTuxedo ? 60 : 56;
+  const suitSizeLabel = isTuxedo ? 'Tuxedo Size' : 'Suit Size';
+
+  const minWaist = 28;
+  const maxWaist = 44;
+
+  const minLength = 26;
+  const maxLength = 38;
+
+  const isWaistInvalid = Boolean(waist && (Number(waist) < minWaist || Number(waist) > maxWaist || isNaN(Number(waist))));
+  const isLengthInvalid = Boolean(pantLength && (Number(pantLength) < minLength || Number(pantLength) > maxLength || isNaN(Number(pantLength))));
+  const isSuitSizeInvalid = Boolean(suitSize && (Number(suitSize) < minSuitSize || Number(suitSize) > maxSuitSize || isNaN(Number(suitSize))));
+
   const numDays = Math.max(1, parseInt(String(rentalDays), 10) || 1);
   const totalAmount = suit.rentalPrice * numDays;
 
   const validateMeasurements = (): boolean => {
     setMeasureError(null);
-    if (waist) {
-      const w = Number(waist);
-      if (isNaN(w) || w < 28 || w > 40) {
-        setMeasureError('Please provide a realistic tailored waist measurement or leave blank.');
-        return false;
-      }
+    if (isWaistInvalid) {
+      setMeasureError(`Waist measurement must be between ${minWaist}" and ${maxWaist}". For sizes outside this limit, visit our showroom or leave blank.`);
+      return false;
     }
-    if (pantLength) {
-      const l = Number(pantLength);
-      if (isNaN(l) || l < 26 || l > 38) {
-        setMeasureError('Please provide a realistic tailored pant length or leave blank.');
-        return false;
-      }
+    if (isLengthInvalid) {
+      setMeasureError(`Pant length must be between ${minLength}" and ${maxLength}". For custom hem length alterations, visit our showroom or leave blank.`);
+      return false;
     }
-    if (suitSize) {
-      const s = Number(suitSize);
-      if (isNaN(s) || s < 38 || s > 60) {
-        setMeasureError('Please provide a realistic tailored suit size or leave blank.');
-        return false;
-      }
+    if (isSuitSizeInvalid) {
+      setMeasureError(`${suitSizeLabel} must be between ${minSuitSize} and ${maxSuitSize}. For sizing outside this limit, our master tailors provide custom showroom fittings.`);
+      return false;
     }
     return true;
   };
@@ -195,7 +224,7 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
               {suit.name}
             </h4>
             <p className="text-xs font-semibold text-[#9E7B4F]">
-              From {formatRWF(suit.rentalPrice)}/Day
+              From {formatRWF(suit.rentalPrice)}/Day <span className="text-[11px] text-[#736E67] font-normal">(~${formatUSD(suit.rentalPrice, exchangeRate)} USD)</span>
             </p>
             <span className="text-[10px] uppercase tracking-wider text-[#8C8278] block">
               {suit.sizes || 'SIZE 44—52'}
@@ -222,7 +251,10 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
             <div className="p-3 bg-[#FAF7F2] rounded-xl text-xs text-[#59524A] max-w-sm mx-auto border border-[#EFEAE2] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[#8C8278]">Rental Duration ({numDays} day{numDays > 1 ? 's' : ''}):</span>
-                <span className="font-bold text-[#191C1A]">{formatRWF(totalAmount)}</span>
+                <div className="text-right">
+                  <span className="font-bold text-[#191C1A] block">{formatRWF(totalAmount)}</span>
+                  <span className="text-[10px] text-[#8C8075]">~${formatUSD(totalAmount, exchangeRate)} USD</span>
+                </div>
               </div>
 
               {(waist || pantLength || suitSize) && (
@@ -287,7 +319,6 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
               <input
                 type="text"
                 required
-                placeholder="e.g. Jean-Pierre Uwimana"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full bg-white border border-[#DDD6CB] rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all touch-manipulation"
@@ -415,61 +446,100 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {/* Pant Waist */}
                     <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A] mb-1">
-                        Waist (Inches)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A]">
+                          Waist (Inches)
+                        </label>
+                        <span className="text-[9px] text-[#8C8075] font-medium">
+                          {minWaist}–{maxWaist}&quot;
+                        </span>
+                      </div>
                       <input
                         type="number"
-                        min={28}
-                        max={40}
+                        min={minWaist}
+                        max={maxWaist}
                         step="0.5"
-                        placeholder="e.g. 34"
                         value={waist}
                         onChange={(e) => {
                           setWaist(e.target.value);
                           setMeasureError(null);
                         }}
-                        className="w-full bg-white border border-[#DDD6CB] rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all"
+                        className={`w-full bg-white border rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none transition-all ${
+                          isWaistInvalid
+                            ? 'border-red-400 bg-red-50/20 text-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                            : 'border-[#DDD6CB] focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A]'
+                        }`}
                       />
+                      {isWaistInvalid && (
+                        <p className="text-[10px] text-red-600 mt-1 font-medium">
+                          Limit exceeded ({minWaist}–{maxWaist}&quot;)
+                        </p>
+                      )}
                     </div>
 
                     {/* Pant Length */}
                     <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A] mb-1">
-                        Pant Length (Inches)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A]">
+                          Pant Length
+                        </label>
+                        <span className="text-[9px] text-[#8C8075] font-medium">
+                          {minLength}–{maxLength}&quot;
+                        </span>
+                      </div>
                       <input
                         type="number"
-                        min={26}
-                        max={38}
+                        min={minLength}
+                        max={maxLength}
                         step="0.5"
-                        placeholder="e.g. 32"
                         value={pantLength}
                         onChange={(e) => {
                           setPantLength(e.target.value);
                           setMeasureError(null);
                         }}
-                        className="w-full bg-white border border-[#DDD6CB] rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all"
+                        className={`w-full bg-white border rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none transition-all ${
+                          isLengthInvalid
+                            ? 'border-red-400 bg-red-50/20 text-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                            : 'border-[#DDD6CB] focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A]'
+                        }`}
                       />
+                      {isLengthInvalid && (
+                        <p className="text-[10px] text-red-600 mt-1 font-medium">
+                          Limit exceeded ({minLength}–{maxLength}&quot;)
+                        </p>
+                      )}
                     </div>
 
-                    {/* Suit Size */}
+                    {/* Suit or Tuxedo Size */}
                     <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A] mb-1">
-                        Suit Size
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[#59524A]">
+                          {suitSizeLabel}
+                        </label>
+                        <span className="text-[9px] text-[#8C8075] font-medium">
+                          {minSuitSize}–{maxSuitSize}
+                        </span>
+                      </div>
                       <input
                         type="number"
-                        min={38}
-                        max={60}
-                        placeholder="e.g. 42"
+                        min={minSuitSize}
+                        max={maxSuitSize}
                         value={suitSize}
                         onChange={(e) => {
                           setSuitSize(e.target.value);
                           setMeasureError(null);
                         }}
-                        className="w-full bg-white border border-[#DDD6CB] rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A] transition-all"
+                        className={`w-full bg-white border rounded-lg px-2.5 py-2 text-xs sm:text-sm text-[#191C1A] placeholder-[#A69E96] focus:outline-none transition-all ${
+                          isSuitSizeInvalid
+                            ? 'border-red-400 bg-red-50/20 text-red-900 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                            : 'border-[#DDD6CB] focus:border-[#191C1A] focus:ring-1 focus:ring-[#191C1A]'
+                        }`}
                       />
+                      {isSuitSizeInvalid && (
+                        <p className="text-[10px] text-red-600 mt-1 font-medium">
+                          Limit exceeded ({minSuitSize}–{maxSuitSize})
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -478,12 +548,22 @@ export default function RentItemModal({ suit, onClose }: RentItemModalProps) {
 
             {/* Estimated Total Calculation */}
             <div className="bg-[#FAF7F2] border border-[#EFEAE2] p-3.5 rounded-xl flex items-center justify-between">
-              <span className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8278]">
-                Estimated Total
-              </span>
-              <span className="text-base sm:text-lg font-bold text-[#191C1A]">
-                {formatRWF(totalAmount)}
-              </span>
+              <div>
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8278] block">
+                  Estimated Total
+                </span>
+                <span className="text-[10px] text-[#8C8075]">
+                  1 USD = {exchangeRate.toLocaleString()} Frw · Settled in Frw
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-base sm:text-lg font-bold text-[#191C1A] block">
+                  {formatRWF(totalAmount)}
+                </span>
+                <span className="text-xs text-[#9E7B4F] font-semibold block">
+                  ~${formatUSD(totalAmount, exchangeRate)} USD
+                </span>
+              </div>
             </div>
 
             {/* Actions: Cancel & Confirm Reservation */}

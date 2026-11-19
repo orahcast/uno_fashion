@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { RentalItem } from '@/lib/types';
 import { formatRWF } from '@/lib/utils';
+import { formatUSD, DEFAULT_USD_RATE } from '@/lib/currency';
 import RentItemModal, { RentModalSuit } from '@/components/storefront/RentItemModal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -19,8 +20,10 @@ export default function CollectionPage() {
   const [sortBy, setSortBy] = useState<string>('featured');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
   const [items, setItems] = useState<RentalItem[]>([]);
+  const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
 
   useEffect(() => {
+    // 1. Fetch catalog items
     fetch('/api/items')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -29,6 +32,16 @@ export default function CollectionPage() {
         }
       })
       .catch((err) => console.error('Error fetching catalog items:', err));
+
+    // 2. Fetch USD currency exchange rate
+    fetch('/api/currency')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.rate === 'number' && data.rate > 0) {
+          setExchangeRate(data.rate);
+        }
+      })
+      .catch((err) => console.error('Error fetching currency rate:', err));
 
     // Supabase Realtime: instantly update collection catalog when items change
     const supabase = createClient();
@@ -50,8 +63,26 @@ export default function CollectionPage() {
       )
       .subscribe();
 
+    // Supabase Realtime: currency rate changes
+    const currencyChannel = supabase
+      .channel('realtime:currency_rate_collection')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.usd_exchange_rate' },
+        (payload: any) => {
+          if (payload.new && payload.new.value) {
+            const r = typeof payload.new.value === 'number' ? payload.new.value : payload.new.value.rate;
+            if (typeof r === 'number' && r > 0) {
+              setExchangeRate(r);
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(currencyChannel);
     };
   }, []);
 
@@ -195,6 +226,7 @@ export default function CollectionPage() {
                       rentalPrice: dailyRate,
                       image: item.images[0],
                       sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
+                      category: item.category,
                     })
                   }
                   onKeyDown={(e) => {
@@ -206,6 +238,7 @@ export default function CollectionPage() {
                         rentalPrice: dailyRate,
                         image: item.images[0],
                         sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
+                        category: item.category,
                       });
                     }
                   }}
@@ -256,7 +289,11 @@ export default function CollectionPage() {
                   <div className="flex items-center justify-between gap-1.5 pt-0.5">
                     <div className="min-w-0">
                       <span className="font-semibold text-xs text-[#191C1A] truncate block">
-                        {formatRWF(dailyRate)}/day
+                        {formatRWF(dailyRate)}
+                        <span className="text-[10px] text-[#7B8079] font-normal ml-0.5">/day</span>
+                      </span>
+                      <span className="text-[10px] text-[#8C8075] font-medium block">
+                        ~${formatUSD(dailyRate, exchangeRate)} USD
                       </span>
                     </div>
 
@@ -271,6 +308,7 @@ export default function CollectionPage() {
                           rentalPrice: dailyRate,
                           image: item.images[0],
                           sizes: (item.sizes && item.sizes.length > 0) ? `SIZE ${item.sizes.join('—')}` : 'Tailored to measure',
+                          category: item.category,
                         });
                       }}
                       className="shrink-0 min-h-[34px] px-3.5 py-1.5 bg-[#191C1A] hover:bg-[#9E7B4F] active:bg-[#9E7B4F] text-white text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider rounded-full transition-all shadow-2xs cursor-pointer touch-manipulation active:scale-95 flex items-center justify-center"
@@ -294,6 +332,7 @@ export default function CollectionPage() {
       <RentItemModal
         suit={selectedSuit}
         onClose={() => setSelectedSuit(null)}
+        exchangeRate={exchangeRate}
       />
     </div>
   );

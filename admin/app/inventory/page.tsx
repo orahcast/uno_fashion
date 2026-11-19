@@ -8,6 +8,7 @@ import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { convertHeicToJpeg } from '@/lib/heic-converter';
+import { formatUSD, DEFAULT_USD_RATE } from '@/lib/currency';
 
 export default function InventoryCentralPage() {
   const [items, setItems] = useState<RentalItem[]>([]);
@@ -15,6 +16,12 @@ export default function InventoryCentralPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<RentalItem | null>(null);
+
+  // USD Currency Exchange Rate state
+  const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
+  const [inputRate, setInputRate] = useState<string>(String(DEFAULT_USD_RATE));
+  const [isSavingRate, setIsSavingRate] = useState(false);
+  const [rateSavedNotice, setRateSavedNotice] = useState(false);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -89,10 +96,45 @@ export default function InventoryCentralPage() {
       )
       .subscribe();
 
+    // 3. Fetch USD Currency Exchange Rate
+    fetch('/api/currency')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.rate === 'number' && data.rate > 0) {
+          setExchangeRate(data.rate);
+          setInputRate(String(data.rate));
+        }
+      })
+      .catch((err) => console.error('Error fetching currency rate:', err));
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const handleSaveRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = Number(inputRate);
+    if (!parsed || parsed <= 0 || isNaN(parsed)) return;
+
+    setIsSavingRate(true);
+    try {
+      const res = await fetch('/api/currency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rate: parsed }),
+      });
+      if (res.ok) {
+        setExchangeRate(parsed);
+        setRateSavedNotice(true);
+        setTimeout(() => setRateSavedNotice(false), 3000);
+      }
+    } catch (err) {
+      console.error('Error saving rate:', err);
+    } finally {
+      setIsSavingRate(false);
+    }
+  };
 
   const persistItems = (updated: RentalItem[]) => {
     setItems(updated);
@@ -385,6 +427,50 @@ export default function InventoryCentralPage() {
         </button>
       </div>
 
+      {/* Global USD Currency Rate Bar */}
+      <div className="bg-[#FAF8F5] border border-[#E8E4DC] rounded-lg p-3 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#9E7B4F]/15 border border-[#9E7B4F]/30 flex items-center justify-center text-[#9E7B4F] font-bold text-sm shrink-0">
+            $
+          </div>
+          <div>
+            <h3 className="text-xs font-bold text-[#191C1A]">
+              USD Currency Exchange Rate
+            </h3>
+            <p className="text-[11px] text-[#6B726A]">
+              Currently active: 1 USD = <span className="font-semibold text-[#191C1A]">{Number(exchangeRate).toLocaleString()} Frw</span>
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveRate} className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center bg-white border border-[#D5CFCE] rounded-md px-2.5 py-1 text-xs">
+            <span className="text-[#8C8075] font-medium mr-1.5">$1 USD =</span>
+            <input
+              type="number"
+              value={inputRate}
+              onChange={(e) => setInputRate(e.target.value)}
+              className="w-20 font-semibold text-[#191C1A] focus:outline-none"
+              placeholder="1479"
+            />
+            <span className="text-[#8C8075] ml-1">Frw</span>
+          </div>
+          <button
+            type="submit"
+            disabled={isSavingRate}
+            className="px-3.5 py-1.5 rounded-md bg-[#191C1A] hover:bg-[#9E7B4F] text-white text-xs font-semibold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-xs active:scale-95"
+          >
+            {isSavingRate ? 'Saving...' : 'Save Rate'}
+          </button>
+          {rateSavedNotice && (
+            <span className="text-xs text-[#2D5A38] font-medium flex items-center gap-1 bg-[#EAF3EC] px-2 py-1 rounded">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Rate Saved!</span>
+            </span>
+          )}
+        </form>
+      </div>
+
       {/* Rental Inventory Card */}
       <div className="bg-white border border-[#E8E4DC] rounded-lg shadow-2xs overflow-hidden">
         {/* Card Header Bar */}
@@ -491,7 +577,10 @@ export default function InventoryCentralPage() {
                     </td>
 
                     <td className="py-3.5 px-4 font-bold text-[#191C1A]">
-                      RWF {item.rentalPrice.toLocaleString('en-US')}
+                      <div>RWF {item.rentalPrice.toLocaleString('en-US')}</div>
+                      <div className="text-[10px] text-[#8C8075] font-normal">
+                        ~${formatUSD(item.rentalPrice, exchangeRate)} USD
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4">
