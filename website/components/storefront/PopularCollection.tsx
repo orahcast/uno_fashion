@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { RentalItem } from '@/lib/types';
 import { INITIAL_ITEMS } from '@/lib/data/mock-catalog';
 import { formatRWF } from '@/lib/utils';
@@ -16,10 +17,16 @@ interface PopularCollectionProps {
 }
 
 export default function PopularCollection({ items: initialPropItems }: PopularCollectionProps) {
+  const router = useRouter();
   const [items, setItems] = useState<RentalItem[]>(initialPropItems || []);
   const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns'>('all');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
+
+  // Pre-load /collection route for instant 0ms navigation
+  useEffect(() => {
+    router.prefetch('/collection');
+  }, [router]);
 
   // Fetch live items from the database/API & subscribe to real-time changes
   useEffect(() => {
@@ -30,6 +37,11 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         .then((data) => {
           if (Array.isArray(data)) {
             setItems(data);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem('uno_inventory_items', JSON.stringify(data));
+              } catch (e) {}
+            }
           }
         })
         .catch(console.error);
@@ -132,9 +144,9 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
     };
   }, []);
 
-  // Filter items based on active tab
+  // Filter items based on active tab and limit to 8 items for the homepage showcase
   const displayItems = useMemo(() => {
-    return items.filter((item) => {
+    const filtered = items.filter((item) => {
       if (item.status === 'Archived' || item.isArchived) return false;
       if (activeTab === 'suits')
         return (
@@ -150,6 +162,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         );
       return true;
     });
+    return filtered.slice(0, 8);
   }, [items, activeTab]);
 
   return (
@@ -206,6 +219,8 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
 
             <Link
               href="/collection"
+              prefetch={true}
+              onMouseEnter={() => router.prefetch('/collection')}
               className="group inline-flex items-center space-x-1.5 border border-[#191C1A] px-4 py-1.5 rounded-full text-[11px] font-medium uppercase tracking-widest text-[#191C1A] hover:bg-[#191C1A] hover:text-[#FAF8F5] transition-all"
             >
               <span>See all</span>
@@ -304,6 +319,20 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
           })}
         </div>
       )}
+
+        {/* View All Button */}
+        <div className="mt-10 sm:mt-12 flex justify-center">
+          <Link
+            href="/collection"
+            prefetch={true}
+            onMouseEnter={() => router.prefetch('/collection')}
+            onTouchStart={() => router.prefetch('/collection')}
+            className="group inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-[#191C1A] hover:bg-[#9E7B4F] text-[#FAF8F5] text-xs font-semibold uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            <span>View All</span>
+            <ArrowRight className="w-4 h-4 text-[#C4A47C] group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
 
         {/* Reassurance text */}
         <p className="text-[11px] text-[#7B8079] mt-8 text-center sm:text-left">

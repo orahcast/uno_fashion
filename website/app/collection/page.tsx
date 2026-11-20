@@ -19,7 +19,18 @@ export default function CollectionPage() {
   const currentCategory = searchParams.get('category') || 'all';
   const [sortBy, setSortBy] = useState<string>('featured');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
-  const [items, setItems] = useState<RentalItem[]>([]);
+  const [items, setItems] = useState<RentalItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('uno_inventory_items');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_ITEMS;
+  });
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
 
   useEffect(() => {
@@ -30,6 +41,11 @@ export default function CollectionPage() {
         .then((data) => {
           if (Array.isArray(data)) {
             setItems(data);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem('uno_inventory_items', JSON.stringify(data));
+              } catch (e) {}
+            }
           }
         })
         .catch(console.error);
