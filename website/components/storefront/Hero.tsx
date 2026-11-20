@@ -59,7 +59,42 @@ export default function Hero() {
         console.error('Failed to fetch hero config from API:', err);
       });
 
-    // 3. Supabase Realtime: instantly update Hero when changed in Admin
+    // 3. Instant cross-tab sync via BroadcastChannel (0ms local realtime)
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('uno_hero_sync');
+        bc.onmessage = (event) => {
+          if (event.data && event.data.image) {
+            setConfig((prev) => ({ ...prev, ...event.data }));
+            try {
+              localStorage.setItem('uno_hero_config', JSON.stringify(event.data));
+            } catch (e) {}
+          }
+        };
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
+    }
+
+    // 4. Cross-window storage listener
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'uno_hero_config' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && parsed.image) {
+            setConfig((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch (err) {
+          console.error('Storage sync error:', err);
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorage);
+    }
+
+    // 5. Supabase Realtime: instantly update Hero across devices when changed in Admin
     const supabase = createClient();
     const channel = supabase
       .channel('realtime:hero_config')
@@ -84,11 +119,16 @@ export default function Hero() {
       .subscribe();
 
     return () => {
+      if (bc) bc.close();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorage);
+      }
       supabase.removeChannel(channel);
     };
   }, []);
 
-  const isDataUrl = config.image.startsWith('data:');
+  const heroImageSrc = config?.image || '/images/hero-men.jpg';
+  const isDataUrl = heroImageSrc.startsWith('data:');
 
   return (
     <section className="relative w-full min-h-[600px] md:h-[88vh] md:min-h-[640px] md:max-h-[820px] bg-[#14100E] text-white flex items-center overflow-hidden">
@@ -201,17 +241,18 @@ export default function Hero() {
         <div className="w-full relative min-h-[440px] md:min-h-full h-full overflow-hidden bg-[#14100E]">
           {isDataUrl ? (
             <img
-              src={config.image}
-              alt={config.alt}
-              className="w-full h-full object-cover object-top md:object-[center_15%]"
+              src={heroImageSrc}
+              alt={config.alt || 'Uno Fashion Atelier'}
+              className="w-full h-full object-cover object-top md:object-[center_15%] transition-opacity duration-500 ease-in-out"
             />
           ) : (
             <Image
-              src={config.image}
-              alt={config.alt}
+              src={heroImageSrc}
+              alt={config.alt || 'Uno Fashion Atelier'}
               fill
               priority
-              className="object-cover object-top md:object-[center_15%]"
+              unoptimized
+              className="object-cover object-top md:object-[center_15%] transition-opacity duration-500 ease-in-out"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           )}

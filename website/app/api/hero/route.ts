@@ -12,6 +12,7 @@ const DEFAULT_CONFIG = {
   headlineHighlight: 'QUIET AUTHORITY',
   subtitle:
     'Uno Fashion Agency Ltd provides bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.',
+  gallery: [],
   updatedAt: new Date().toISOString(),
 };
 

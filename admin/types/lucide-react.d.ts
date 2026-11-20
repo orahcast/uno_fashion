@@ -66,4 +66,5 @@ declare module 'lucide-react' {
   export const Eye: LucideIcon;
   export const Download: LucideIcon;
   export const AlertCircle: LucideIcon;
+  export const Zap: LucideIcon;
 }
