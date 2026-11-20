@@ -185,6 +185,15 @@ export default function InventoryCentralPage() {
         }
       }
 
+      // Instant cross-tab broadcast to storefront
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        try {
+          const bc = new BroadcastChannel('uno_items_sync');
+          bc.postMessage({ action: 'delete', id });
+          bc.close();
+        } catch (bcErr) {}
+      }
+
       // Direct Supabase delete from browser to trigger real-time updates on website
       try {
         const supabase = createClient();

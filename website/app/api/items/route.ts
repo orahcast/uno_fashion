@@ -278,9 +278,39 @@ export async function POST(request: Request) {
     if (isSupabaseConfigured()) {
       try {
         const supabase = await createClient();
+        const dbRecord = {
+          id: record.id,
+          slug: record.slug,
+          name: record.name,
+          sku: record.sku,
+          category: record.category,
+          category_slug: record.category_slug,
+          color: record.color,
+          fit: record.fit,
+          description: record.description,
+          rental_price: record.rental_price,
+          rental_period_days: record.rental_period_days,
+          images: record.images,
+          sizes: record.sizes,
+          size_range: record.size_range,
+          simple_status: record.simple_status,
+          condition: record.condition,
+          stock_by_size: record.stock_by_size,
+          total_stock: record.total_stock,
+          ready_stock: record.ready_stock,
+          rented_stock: record.rented_stock,
+          in_care_stock: record.in_care_stock,
+          status: record.status,
+          allow_online_booking: record.allow_online_booking,
+          cleaning_turnaround_days: record.cleaning_turnaround_days,
+          badge: record.badge,
+          is_archived: record.is_archived,
+          updated_at: record.updated_at,
+        };
+
         const { data, error } = await supabase
           .from('items')
-          .upsert(record, { onConflict: 'id' })
+          .upsert(dbRecord, { onConflict: 'id' })
           .select()
           .single();
 
