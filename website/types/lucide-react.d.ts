@@ -59,4 +59,5 @@ declare module 'lucide-react' {
   export const Save: LucideIcon;
   export const MoveUp: LucideIcon;
   export const MoveDown: LucideIcon;
+  export const Maximize2: LucideIcon;
 }

@@ -88,6 +88,14 @@ export default function Navbar() {
             </Link>
 
             <Link
+              href="/decor-services"
+              prefetch={true}
+              className="hover:text-white transition-colors"
+            >
+              Decor Services
+            </Link>
+
+            <Link
               href="/#how-it-works"
               className="hover:text-white transition-colors"
             >
@@ -153,6 +161,15 @@ export default function Navbar() {
                   <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C4A47C] bg-[#26201C] px-2 py-0.5 rounded-full border border-[#3A312A]">
                     VIP
                   </span>
+                </Link>
+
+                <Link
+                  href="/decor-services"
+                  prefetch={true}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="font-serif-luxury text-2xl text-[#FAF8F5] hover:text-[#C4A47C] active:text-[#C4A47C] transition-colors"
+                >
+                  Decor Services
                 </Link>
 
                 <Link

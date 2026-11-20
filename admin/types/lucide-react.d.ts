@@ -67,4 +67,5 @@ declare module 'lucide-react' {
   export const Download: LucideIcon;
   export const AlertCircle: LucideIcon;
   export const Zap: LucideIcon;
+  export const Maximize2: LucideIcon;
 }

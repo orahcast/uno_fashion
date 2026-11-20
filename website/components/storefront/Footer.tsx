@@ -162,6 +162,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/decor-services" className="hover:text-[#C4A47C] transition-colors text-white font-medium">
+                  Decor Services
+                </Link>
+              </li>
+              <li>
                 <a href="#how-it-works" className="hover:text-white transition-colors">
                   Rental Process & Care
                 </a>
