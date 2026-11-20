@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('ufashionagency@gmail.com');
+  const [email, setEmail] = useState('unofashionagencyltd@gmail.com');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,9 +32,13 @@ export default function AdminLoginPage() {
           !process.env.NEXT_PUBLIC_SUPABASE_URL ||
           process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder-project');
 
+        const isAllowedEmail =
+          email.trim() === 'unofashionagencyltd@gmail.com' ||
+          email.trim() === 'ufashionagency@gmail.com';
+
         if (
           isPlaceholder &&
-          email.trim() === 'ufashionagency@gmail.com' &&
+          isAllowedEmail &&
           password === 'Unofashion123!'
         ) {
           router.push('/');

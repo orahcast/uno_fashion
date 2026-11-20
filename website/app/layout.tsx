@@ -114,10 +114,10 @@ const jsonLd = {
       description:
         'Uno Fashion Agency — Bespoke suit rentals, tuxedos, and wedding protocol services in Kigali, Rwanda.',
       telephone: '+250783036628',
-      email: 'ufashionagency@gmail.com',
+      email: 'unofashionagencyltd@gmail.com',
       address: {
         '@type': 'PostalAddress',
-        streetAddress: 'KN 74 St, Nyarugenge',
+        streetAddress: 'KN 74 St Kigali, Nyarugenge market',
         addressLocality: 'Kigali',
         addressCountry: 'RW',
       },
@@ -136,6 +136,7 @@ const jsonLd = {
             'Thursday',
             'Friday',
             'Saturday',
+            'Sunday',
           ],
           opens: '08:00',
           closes: '20:00',

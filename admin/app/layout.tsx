@@ -380,7 +380,7 @@ export default function AdminRootLayout({
                   Boutique Owner
                 </span>
                 <span className="text-[10px] text-[#8C8075] block truncate">
-                  ufashionagency@gmail.com
+                  unofashionagencyltd@gmail.com
                 </span>
               </div>
             </div>
@@ -512,7 +512,7 @@ export default function AdminRootLayout({
                       Boutique Owner
                     </span>
                     <span className="text-[10px] text-[#8C8075] block truncate">
-                      ufashionagency@gmail.com
+                      unofashionagencyltd@gmail.com
                     </span>
                   </div>
                 </div>

@@ -68,18 +68,18 @@ I am reaching out via your website "Get In Touch" form:
     {
       icon: Mail,
       label: 'Email Address',
-      value: 'ufashionagency@gmail.com',
-      href: 'mailto:ufashionagency@gmail.com',
+      value: 'unofashionagencyltd@gmail.com',
+      href: 'mailto:unofashionagencyltd@gmail.com',
     },
     {
       icon: Clock,
       label: 'Opening Hours',
-      value: 'Mon – Sat: 8:00 AM – 8:00 PM',
+      value: 'Mon – Sun: 8:00 AM – 8:00 PM',
     },
     {
       icon: MapPin,
       label: 'Our Location',
-      value: 'KN 74 St, Nyarugenge, Kigali, Rwanda',
+      value: 'KN 74 St Kigali, Nyarugenge market',
     },
   ];
 

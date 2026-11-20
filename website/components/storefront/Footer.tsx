@@ -75,9 +75,8 @@ export default function Footer() {
               Visit Atelier
             </span>
             <div className="text-xs text-[#B8ADA2] space-y-1.5 leading-relaxed">
-              <p className="font-medium text-white">Kigali, Rwanda</p>
-              <p>KG 14 Ave, Nyarutarama</p>
-              <p>Tue–Sat · 10am–6pm</p>
+              <p className="font-medium text-white">KN 74 St Kigali, Nyarugenge market</p>
+              <p>Mon–Sun · 8am–8pm</p>
             </div>
           </div>
 
@@ -88,8 +87,8 @@ export default function Footer() {
             </span>
             <div className="text-xs text-[#B8ADA2] space-y-2">
               <p>
-                <a href="mailto:ufashionagency@gmail.com" className="hover:text-white transition-colors">
-                  ufashionagency@gmail.com
+                <a href="mailto:unofashionagencyltd@gmail.com" className="hover:text-white transition-colors">
+                  unofashionagencyltd@gmail.com
                 </a>
               </p>
               <p>+250 783 036 628</p>
