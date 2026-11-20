@@ -324,107 +324,22 @@ export default function CustomersPage() {
           <span className="text-[11px] text-[#8C8075]">Sorted from most recent</span>
         </div>
 
-        {/* Mobile View: Dedicated Tap-to-Call Cards */}
-        <div className="block md:hidden divide-y divide-[#F0EDE6]">
-          {filteredEntries.length === 0 ? (
-            <div className="py-12 px-6 text-center text-xs text-[#8C8075]">
-              No client entries found matching your search or filter.
-            </div>
-          ) : (
-            filteredEntries.map((entry) => {
-              const cleanPhone = entry.telephone ? entry.telephone.replace(/[^\d+]/g, '') : '';
-
-              return (
-                <div key={entry.id} className="p-4 space-y-3 bg-white hover:bg-[#FAF8F5] transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-sm font-bold text-[#191C1A]">
-                        {entry.clientName}
-                      </h3>
-                      <p className="text-[10px] text-[#8C8075] mt-0.5">
-                        Logged on {entry.dateLogged} · {entry.timeLogged}
-                      </p>
-                    </div>
-
-                    <select
-                      value={entry.status}
-                      onChange={(e) =>
-                        handleStatusToggle(entry.id, e.target.value as ClientBookStatus)
-                      }
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full border focus:outline-none cursor-pointer ${getStatusStyle(
-                        entry.status
-                      )}`}
-                    >
-                      <option value="OUT">OUT</option>
-                      <option value="RETURNED">RETURNED</option>
-                      <option value="FITTING">FITTING</option>
-                    </select>
-                  </div>
-
-                  {/* Clickable Mobile Phone Link (Tap to Call) */}
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    {cleanPhone ? (
-                      <a
-                        href={`tel:${cleanPhone}`}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#FAF4EB] hover:bg-[#4A2311] text-[#4A2311] hover:text-white font-bold text-xs transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                        title={`Tap to call ${entry.clientName}`}
-                      >
-                        <Phone className="w-3.5 h-3.5 text-[#9E7B4F]" />
-                        <span>{entry.telephone}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-[#9E7B4F] ml-1">· Call Now</span>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-[#8C8075]">No phone provided</span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteEntry(entry.id, entry.clientName)}
-                      className="p-2 text-[#8C8075] hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
-                      title="Delete entry"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-[#F5F2EB]">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider text-[#8C8075] block">Outfit Taken</span>
-                      <span className="font-medium text-[#191C1A]">{entry.outfitTaken}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider text-[#8C8075] block">Return Due</span>
-                      <span className="font-medium text-[#52574F]">{entry.returnDue}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-[10px] uppercase tracking-wider text-[#8C8075] block">National ID / Passport</span>
-                      <span className="inline-block bg-[#F2ECE1] text-[#52574F] text-[11px] font-mono px-2 py-0.5 rounded-sm border border-[#E5DFD4] mt-0.5">
-                        {entry.nationalId}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Desktop View: Full Responsive Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#F2ECE1]/70 text-[#6B726A] uppercase tracking-wider text-[10px] border-b border-[#E8E4DC]">
+        {/* Responsive Table with Horizontal Scroll for Mobile & Desktop */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[720px] whitespace-nowrap">
+            <thead className="bg-[#F2ECE1] text-[#6B726A] uppercase tracking-wider text-[10px] border-b border-[#E8E4DC]">
               <tr>
-                <th className="py-3 px-5 font-semibold">Date Logged</th>
+                <th className="py-3 px-4 font-semibold">Date Logged</th>
                 <th className="py-3 px-4 font-semibold">Client Name</th>
                 <th className="py-3 px-4 font-semibold">Telephone</th>
                 <th className="py-3 px-4 font-semibold">National ID / Passport</th>
                 <th className="py-3 px-4 font-semibold">Outfit Taken</th>
                 <th className="py-3 px-4 font-semibold">Return Due</th>
-                <th className="py-3 px-5 font-semibold">Status</th>
-                <th className="py-3 px-5 font-semibold text-right">Action</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+                <th className="py-3 px-4 font-semibold text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F0EDE6]">
+            <tbody className="divide-y divide-[#EBE5DB]">
               {filteredEntries.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 px-6 text-center text-xs text-[#8C8075]">
@@ -432,24 +347,25 @@ export default function CustomersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredEntries.map((entry) => {
+                filteredEntries.map((entry, idx) => {
                   const cleanPhone = entry.telephone ? entry.telephone.replace(/[^\d+]/g, '') : '';
+                  const isColored = idx % 2 === 1;
 
                   return (
                     <tr
                       key={entry.id}
-                      className="hover:bg-[#FAF8F5] transition-colors"
+                      className={`${isColored ? 'bg-[#F5EFE6]' : 'bg-white'} hover:bg-[#ECE4D8] transition-colors`}
                     >
-                      <td className="py-4 px-5">
+                      <td className="py-3 px-4">
                         <div className="text-[#191C1A] font-medium">{entry.dateLogged}</div>
                         <div className="text-[10px] text-[#8C8075]">{entry.timeLogged}</div>
                       </td>
 
-                      <td className="py-4 px-4 font-bold text-[#191C1A]">
+                      <td className="py-3 px-4 font-bold text-[#191C1A]">
                         {entry.clientName}
                       </td>
 
-                      <td className="py-4 px-4">
+                      <td className="py-3 px-4">
                         {cleanPhone ? (
                           <a
                             href={`tel:${cleanPhone}`}
@@ -459,28 +375,28 @@ export default function CustomersPage() {
                             <span className="p-1 rounded-full bg-[#FAF4EB] group-hover:bg-[#4A2311] group-hover:text-white transition-colors">
                               <Phone className="w-3 h-3" />
                             </span>
-                            <span>{entry.telephone}</span>
+                            <span className="font-mono">{entry.telephone}</span>
                           </a>
                         ) : (
                           <span className="text-[#8C8075]">—</span>
                         )}
                       </td>
 
-                      <td className="py-4 px-4">
-                        <span className="inline-block bg-[#F2ECE1] text-[#52574F] text-[11px] font-mono px-2 py-0.5 rounded-sm border border-[#E5DFD4]">
+                      <td className="py-3 px-4">
+                        <span className="inline-block bg-black/[0.04] text-[#52574F] text-[11px] font-mono px-2 py-0.5 rounded border border-[#DDD6CB]">
                           {entry.nationalId}
                         </span>
                       </td>
 
-                      <td className="py-4 px-4 font-medium text-[#191C1A]">
+                      <td className="py-3 px-4 font-medium text-[#191C1A]">
                         {entry.outfitTaken}
                       </td>
 
-                      <td className="py-4 px-4 text-[#52574F] font-medium">
+                      <td className="py-3 px-4 text-[#1E40AF] font-semibold">
                         {entry.returnDue}
                       </td>
 
-                      <td className="py-4 px-5">
+                      <td className="py-3 px-4">
                         <select
                           value={entry.status}
                           onChange={(e) =>
@@ -496,7 +412,7 @@ export default function CustomersPage() {
                         </select>
                       </td>
 
-                      <td className="py-4 px-5 text-right">
+                      <td className="py-3 px-4 text-right">
                         <button
                           type="button"
                           onClick={() => handleDeleteEntry(entry.id, entry.clientName)}

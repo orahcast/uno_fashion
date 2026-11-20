@@ -46,7 +46,7 @@ export default function RentItemModal({ suit, onClose, exchangeRate: propRate }:
       .catch((err) => console.error('Error fetching currency rate:', err));
   }, [propRate]);
 
-  // Optional Measurements State (Pant Waist: 28-40, Pant Length: 26-38, Suit Size: 38-60)
+  // Optional Measurements State (Pant Waist: 28-60, Pant Length: 36-43, Suit Size: 44-60)
   const [showMeasurements, setShowMeasurements] = useState(false);
   const [waist, setWaist] = useState('');
   const [pantLength, setPantLength] = useState('');
@@ -72,14 +72,14 @@ export default function RentItemModal({ suit, onClose, exchangeRate: propRate }:
   );
 
   const minSuitSize = 44;
-  const maxSuitSize = isTuxedo ? 60 : 56;
+  const maxSuitSize = 60;
   const suitSizeLabel = isTuxedo ? 'Tuxedo Size' : 'Suit Size';
 
   const minWaist = 28;
-  const maxWaist = 44;
+  const maxWaist = 60;
 
-  const minLength = 26;
-  const maxLength = 38;
+  const minLength = 36;
+  const maxLength = 43;
 
   const isWaistInvalid = Boolean(waist && (Number(waist) < minWaist || Number(waist) > maxWaist || isNaN(Number(waist))));
   const isLengthInvalid = Boolean(pantLength && (Number(pantLength) < minLength || Number(pantLength) > maxLength || isNaN(Number(pantLength))));
@@ -399,7 +399,7 @@ export default function RentItemModal({ suit, onClose, exchangeRate: propRate }:
               </div>
             </div>
 
-            {/* Optional Tailoring Measurements (Pant Waist: 28-40, Pant Length: 26-38, Suit Size: 38-60) */}
+            {/* Optional Tailoring Measurements (Pant Waist: 28-60, Pant Length: 36-43, Suit Size: 44-60) */}
             <div className="border border-[#E8E2D6] rounded-xl overflow-hidden bg-[#FAF8F5]/60 transition-all">
               <button
                 type="button"
