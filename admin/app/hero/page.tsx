@@ -114,25 +114,88 @@ export default function HeroLandingManagerPage() {
       .catch((err) => console.error('API load error:', err));
   }, []);
 
-  // Helper to add photo to persistent gallery
-  const addPhotoToGallery = (url: string, rawFileName?: string) => {
+  // Master persistence: updates state, localStorage, cross-tab BroadcastChannel, and database
+  const persistConfig = async (
+    targetGallery: PhotoshootItem[],
+    targetImage: string,
+    successMessage?: string
+  ) => {
+    setIsSaving(true);
+    const updated: HeroConfig = {
+      ...config,
+      image: targetImage,
+      headlinePrefix: headlinePrefix.trim(),
+      headlineHighlight: headlineHighlight.trim(),
+      gallery: targetGallery,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 1. Instant React state update
+    setConfig(updated);
+    setGallery(targetGallery);
+    setSelectedImage(targetImage);
+
+    // 2. Instant local storage persistence (persists across browser refreshes)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('uno_hero_config', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage error:', e);
+      }
+    }
+
+    // 3. Instant 0ms cross-tab broadcast to website storefront
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('uno_hero_sync');
+        bc.postMessage(updated);
+        bc.close();
+      } catch (bcErr) {
+        console.warn('BroadcastChannel error:', bcErr);
+      }
+    }
+
+    // 4. Background persistence to server API and Supabase database
+    try {
+      await fetch('/api/hero', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+
+      if (successMessage) {
+        showToast(successMessage);
+      }
+    } catch (err) {
+      console.error('Failed to sync hero config to server:', err);
+      if (successMessage) {
+        showToast(successMessage);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Helper to add photo to persistent gallery and save immediately
+  const addPhotoToGallery = async (url: string, rawFileName?: string) => {
     const baseName = rawFileName
       ? rawFileName.replace(/\.[^/.]+$/, '').slice(0, 20)
-      : `Studio Shoot ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+      : `Shoot ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
 
     const newShoot: PhotoshootItem = {
-      id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: baseName,
       tag: 'Studio Upload',
       src: url,
       isDefault: false,
     };
 
-    setGallery((prev) => {
-      const filtered = prev.filter((item) => item.src !== url);
-      return [newShoot, ...filtered];
-    });
-    setSelectedImage(url);
+    const updatedGallery = [newShoot, ...gallery.filter((item) => item.src !== url)];
+    await persistConfig(
+      updatedGallery,
+      url,
+      'Photo uploaded & permanently saved to Atelier Shoots!'
+    );
   };
 
   // Upload image from phone or laptop
@@ -170,12 +233,7 @@ export default function HeroLandingManagerPage() {
 
         const json = await res.json();
         if (res.ok && json.url) {
-          addPhotoToGallery(json.url, fileToUpload.name);
-          showToast(
-            isHeic
-              ? 'HEIC converted & added to Atelier Shoots! Click "Save & Publish" to update website.'
-              : 'Photo uploaded & added to Atelier Shoots! Click "Save & Publish" to update website.'
-          );
+          await addPhotoToGallery(json.url, fileToUpload.name);
           return;
         } else {
           throw new Error(json.error || 'Server upload failed');
@@ -195,8 +253,7 @@ export default function HeroLandingManagerPage() {
             const {
               data: { publicUrl },
             } = supabase.storage.from('inventory-photos').getPublicUrl(fileName);
-            addPhotoToGallery(publicUrl, fileToUpload.name);
-            showToast('Photo uploaded & added to Atelier Shoots! Click "Save & Publish" to update website.');
+            await addPhotoToGallery(publicUrl, fileToUpload.name);
             return;
           }
         } catch (clientErr) {
@@ -204,10 +261,9 @@ export default function HeroLandingManagerPage() {
         }
 
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           if (typeof reader.result === 'string') {
-            addPhotoToGallery(reader.result, fileToUpload.name);
-            showToast('Photo added to Atelier Shoots! Click "Save & Publish" to update website.');
+            await addPhotoToGallery(reader.result, fileToUpload.name);
           }
         };
         reader.readAsDataURL(fileToUpload);
@@ -215,65 +271,35 @@ export default function HeroLandingManagerPage() {
     }
   };
 
-  // Delete a custom uploaded shoot
-  const handleDeleteCustomShoot = (id: string, e: React.MouseEvent) => {
+  // Permanently delete a photoshoot from gallery, localStorage, and database
+  const handleDeleteCustomShoot = async (shootToDelete: PhotoshootItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    setGallery((prev) => {
-      const updated = prev.filter((item) => item.id !== id);
-      return updated;
-    });
-    showToast('Removed shoot from atelier gallery.');
+
+    const updatedGallery = gallery.filter(
+      (item) => item.id !== shootToDelete.id && item.src !== shootToDelete.src
+    );
+
+    // If the deleted shoot was selected or active on website, fallback to next available or default
+    let newImage = selectedImage;
+    if (selectedImage === shootToDelete.src) {
+      newImage = updatedGallery.length > 0 ? updatedGallery[0].src : DEFAULT_CONFIG.image;
+    }
+
+    let newActiveHero = config.image;
+    if (config.image === shootToDelete.src) {
+      newActiveHero = newImage;
+    }
+
+    await persistConfig(
+      updatedGallery,
+      newActiveHero,
+      'Photo permanently deleted from Atelier Shoots.'
+    );
   };
 
   // Publish in Real-Time to Storefront
   const publishNow = async (imageToPublish: string) => {
-    setIsSaving(true);
-    const updated: HeroConfig = {
-      ...config,
-      image: imageToPublish,
-      headlinePrefix: headlinePrefix.trim(),
-      headlineHighlight: headlineHighlight.trim(),
-      gallery,
-      updatedAt: new Date().toISOString(),
-    };
-
-    // 1. Instant local storage persistence
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('uno_hero_config', JSON.stringify(updated));
-      } catch (e) {}
-    }
-
-    // 2. Instant 0ms cross-tab broadcast to website storefront
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      try {
-        const bc = new BroadcastChannel('uno_hero_sync');
-        bc.postMessage(updated);
-        bc.close();
-      } catch (bcErr) {
-        console.warn('BroadcastChannel error:', bcErr);
-      }
-    }
-
-    // 3. Update active React state immediately
-    setConfig(updated);
-    setSelectedImage(imageToPublish);
-
-    // 4. Persist to API & Supabase database in background
-    try {
-      await fetch('/api/hero', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-
-      showToast('Landing hero updated live in real time!');
-    } catch (err) {
-      console.error(err);
-      showToast('Published locally! Website updated.');
-    } finally {
-      setIsSaving(false);
-    }
+    await persistConfig(gallery, imageToPublish, 'Landing hero updated live in real time!');
   };
 
   const handleSave = () => {
@@ -459,11 +485,12 @@ export default function HeroLandingManagerPage() {
                           {/* Delete button */}
                           <button
                             type="button"
-                            onClick={(e) => handleDeleteCustomShoot(shoot.id, e)}
-                            className="absolute bottom-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                            title="Remove photo from gallery"
+                            onClick={(e) => handleDeleteCustomShoot(shoot, e)}
+                            className="absolute bottom-2 right-2 p-1.5 rounded-full bg-black/75 hover:bg-rose-600 text-white shadow-md transition-all z-20 cursor-pointer sm:opacity-80 sm:hover:opacity-100 active:scale-95"
+                            title="Delete this photoshoot permanently"
+                            aria-label="Delete photoshoot"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5 text-white" />
                           </button>
                         </div>
 

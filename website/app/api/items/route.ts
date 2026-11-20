@@ -54,6 +54,16 @@ function addDeletedItemId(id: string) {
   }
 }
 
+function removeDeletedItemId(id: string) {
+  try {
+    const f = getDeletedFilePath();
+    const current = getDeletedItemIds().filter((d) => d !== id);
+    fs.writeFileSync(f, JSON.stringify(current, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error removing deleted item id:', err);
+  }
+}
+
 function getLocalItems() {
   const deletedIds = getDeletedItemIds();
   try {
@@ -104,6 +114,7 @@ export async function GET(request: Request) {
   const id = searchParams.get('id');
   const deletedIds = getDeletedItemIds();
 
+  let dbItems: any[] = [];
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createClient();
@@ -122,7 +133,7 @@ export async function GET(request: Request) {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        const mapped = data
+        dbItems = data
           .filter((item) => !deletedIds.includes(item.id))
           .map((item) => ({
             id: item.id,
@@ -153,26 +164,141 @@ export async function GET(request: Request) {
             cleaningTurnaroundDays: item.cleaning_turnaround_days,
             badge: item.badge,
           }));
-        return NextResponse.json(mapped, { headers: CORS_HEADERS });
       }
     } catch (err) {
       console.error('Supabase fetch items error:', err);
     }
   }
 
-  // Fallback to local catalog
-  let filtered = getLocalItems();
+  // Read local catalog items as well so newly created items are immediately available
+  const localItems = getLocalItems();
+  const itemMap = new Map<string, any>();
+  dbItems.forEach((item) => itemMap.set(item.id, item));
+  localItems.forEach((item: any) => {
+    if (!deletedIds.includes(item.id)) {
+      itemMap.set(item.id, { ...itemMap.get(item.id), ...item });
+    }
+  });
+
+  let merged = Array.from(itemMap.values());
   if (id) {
-    filtered = filtered.filter((i: any) => i.id === id);
+    merged = merged.filter((i: any) => i.id === id);
   }
   if (slug) {
-    filtered = filtered.filter((i: any) => i.slug === slug);
+    merged = merged.filter((i: any) => i.slug === slug);
   }
   if (category && category !== 'all') {
-    filtered = filtered.filter((i: any) => i.categorySlug === category);
+    merged = merged.filter((i: any) => i.categorySlug === category || i.category?.toLowerCase() === category.toLowerCase());
   }
 
-  return NextResponse.json(filtered, { headers: CORS_HEADERS });
+  return NextResponse.json(merged, { headers: CORS_HEADERS });
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    if (!body || !body.name) {
+      return NextResponse.json({ error: 'Item name is required' }, { status: 400, headers: CORS_HEADERS });
+    }
+
+    const slug =
+      body.slug ||
+      body.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+    const itemId = body.id || `item-${Date.now().toString().slice(-6)}`;
+    removeDeletedItemId(itemId);
+
+    const record = {
+      id: itemId,
+      slug,
+      name: body.name,
+      sku: body.sku || `SU-${Math.floor(100 + Math.random() * 900)}`,
+      category: body.category || 'Suits',
+      category_slug: body.categorySlug || 'suits',
+      color: body.color || '',
+      fabric: body.fabric || '',
+      fit: body.fit || '',
+      description: body.description || '',
+      rental_price: Number(body.rentalPrice || body.price || 0),
+      refundable_deposit: Number(body.refundableDeposit || 0),
+      rental_period_days: Number(body.rentalPeriodDays || 4),
+      images: Array.isArray(body.images) ? body.images : body.image ? [body.image] : [],
+      sizes: Array.isArray(body.sizes) ? body.sizes : ['38', '40', '42', '44'],
+      size_range: body.sizeRange || '',
+      simple_status: body.simpleStatus || 'Available',
+      condition: body.condition || 'Pristine',
+      stock_by_size: body.stockBySize || [],
+      total_stock: Number(body.totalStock || 1),
+      ready_stock: Number(body.readyStock || 1),
+      rented_stock: Number(body.rentedStock || 0),
+      in_care_stock: Number(body.inCareStock || 0),
+      status: body.status || 'Published',
+      allow_online_booking: body.allowOnlineBooking !== false,
+      cleaning_turnaround_days: Number(body.cleaningTurnaroundDays || 1),
+      badge: body.badge || null,
+      is_archived: Boolean(body.isArchived),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Update local items file
+    try {
+      const current = getLocalItems();
+      const existingIdx = current.findIndex((i: any) => i.id === itemId);
+      const camelItem = {
+        ...record,
+        rentalPrice: record.rental_price,
+        refundableDeposit: record.refundable_deposit,
+        rentalPeriodDays: record.rental_period_days,
+        categorySlug: record.category_slug,
+        sizeRange: record.size_range,
+        simpleStatus: record.simple_status,
+        stockBySize: record.stock_by_size,
+        totalStock: record.total_stock,
+        readyStock: record.ready_stock,
+        rentedStock: record.rented_stock,
+        inCareStock: record.in_care_stock,
+        allowOnlineBooking: record.allow_online_booking,
+        cleaningTurnaroundDays: record.cleaning_turnaround_days,
+        isArchived: record.is_archived,
+      };
+
+      if (existingIdx >= 0) {
+        current[existingIdx] = { ...current[existingIdx], ...camelItem };
+      } else {
+        current.unshift(camelItem);
+      }
+      saveLocalItems(current);
+    } catch (e) {
+      console.error('Error updating local items cache:', e);
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+          .from('items')
+          .upsert(record, { onConflict: 'id' })
+          .select()
+          .single();
+
+        if (!error && data) {
+          return NextResponse.json({ success: true, item: data }, { headers: CORS_HEADERS });
+        }
+      } catch (err) {
+        console.error('Supabase error saving item:', err);
+      }
+    }
+
+    return NextResponse.json({ success: true, item: record }, { headers: CORS_HEADERS });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid request' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
 }
 
 export async function DELETE(request: Request) {

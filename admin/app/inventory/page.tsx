@@ -9,6 +9,7 @@ import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { convertHeicToJpeg } from '@/lib/heic-converter';
 import { formatUSD, DEFAULT_USD_RATE } from '@/lib/currency';
+import GarmentModal from '@/components/GarmentModal';
 
 export default function InventoryCentralPage() {
   const [items, setItems] = useState<RentalItem[]>([]);
@@ -22,15 +23,6 @@ export default function InventoryCentralPage() {
   const [inputRate, setInputRate] = useState<string>(String(DEFAULT_USD_RATE));
   const [isSavingRate, setIsSavingRate] = useState(false);
   const [rateSavedNotice, setRateSavedNotice] = useState(false);
-
-  // Form State
-  const [formName, setFormName] = useState('');
-  const [formCategory, setFormCategory] = useState<ItemCategory>('Suits');
-  const [formSizeRange, setFormSizeRange] = useState('38–44');
-  const [formPrice, setFormPrice] = useState('150000');
-  const [formStatus, setFormStatus] = useState<InventorySimpleStatus>('Available');
-  const [formCondition, setFormCondition] = useState('—');
-  const [formImage, setFormImage] = useState<string>('');
 
   // Sync with live database and fallback to localStorage
   useEffect(() => {
@@ -215,182 +207,14 @@ export default function InventoryCentralPage() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const isHeic =
-        file.name.toLowerCase().endsWith('.heic') ||
-        file.name.toLowerCase().endsWith('.heif') ||
-        file.type === 'image/heic' ||
-        file.type === 'image/heif';
-
-      let fileToUpload = file;
-      if (isHeic) {
-        try {
-          fileToUpload = await convertHeicToJpeg(file);
-        } catch (convErr: any) {
-          alert(convErr.message || 'HEIC conversion failed. Please use a JPG or PNG.');
-          return;
-        }
-      }
-
-      try {
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-        formData.append('folder', 'inventory');
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const json = await res.json();
-        if (res.ok && json.url) {
-          setFormImage(json.url);
-          return;
-        } else {
-          throw new Error(json.error || 'Server upload failed');
-        }
-      } catch (apiErr: any) {
-        console.warn('Server upload error, attempting direct storage upload:', apiErr);
-
-        try {
-          const supabase = createClient();
-          const fileExt = fileToUpload.name.split('.').pop()?.toLowerCase() || 'jpg';
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-          const { data, error } = await supabase.storage
-            .from('inventory-photos')
-            .upload(fileName, fileToUpload, { upsert: true });
-
-          if (!error && data) {
-            const {
-              data: { publicUrl },
-            } = supabase.storage.from('inventory-photos').getPublicUrl(fileName);
-            setFormImage(publicUrl);
-            return;
-          }
-        } catch (uploadErr) {
-          console.warn('Storage upload fallback:', uploadErr);
-        }
-
-        // Fallback to data URL
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            setFormImage(reader.result);
-          }
-        };
-        reader.readAsDataURL(fileToUpload);
-      }
-    }
-  };
-
   const openAddModal = () => {
     setEditingItem(null);
-    setFormName('');
-    setFormImage('');
-    setFormCategory('Suits');
-    setFormSizeRange('38–44');
-    setFormPrice('150000');
-    setFormStatus('Available');
-    setFormCondition('—');
     setShowItemModal(true);
   };
 
   const openEditModal = (item: RentalItem) => {
     setEditingItem(item);
-    setFormName(item.name);
-    setFormImage(item.images?.[0] || '');
-    setFormCategory(item.category);
-    setFormSizeRange(item.sizeRange || item.sizes.join('–'));
-    setFormPrice(String(item.rentalPrice));
-    setFormStatus(item.simpleStatus || 'Available');
-    setFormCondition(item.condition || '—');
     setShowItemModal(true);
-  };
-
-  const handleSaveItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalImage =
-      formImage.trim() ||
-      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200';
-
-    if (editingItem) {
-      const updatedItem: RentalItem = {
-        ...editingItem,
-        name: formName,
-        images: [finalImage, ...(editingItem.images?.slice(1) || [])],
-        category: formCategory,
-        sizeRange: formSizeRange,
-        rentalPrice: Number(formPrice) || 0,
-        simpleStatus: formStatus,
-        condition: formCondition,
-      };
-      const updated = items.map((item) =>
-        item.id === editingItem.id ? updatedItem : item
-      );
-      persistItems(updated);
-
-      fetch('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedItem),
-      }).catch(console.error);
-    } else {
-      const newItem: RentalItem = {
-        id: `item-${Date.now()}`,
-        slug: formName.toLowerCase().replace(/\s+/g, '-'),
-        name: formName,
-        sku: `UF-${Math.floor(100 + Math.random() * 900)}`,
-        category: formCategory,
-        categorySlug:
-          formCategory === 'Bridal gowns'
-            ? 'gowns'
-            : formCategory === 'Accessories'
-            ? 'accessories'
-            : 'suits',
-        color: '',
-        fabric: '',
-        fit: '',
-        description: formName,
-        rentalPrice: Number(formPrice) || 0,
-        refundableDeposit: 0,
-        rentalPeriodDays: 1,
-        images: [finalImage],
-        sizes: [formSizeRange],
-        sizeRange: formSizeRange,
-        simpleStatus: formStatus,
-        condition: formCondition,
-        stockBySize: [],
-        totalStock: 1,
-        readyStock: formStatus === 'Available' ? 1 : 0,
-        rentedStock: formStatus === 'Rented' ? 1 : 0,
-        inCareStock: formStatus === 'Dry cleaning' ? 1 : 0,
-        status: 'Published',
-        allowOnlineBooking: true,
-        cleaningTurnaroundDays: 1,
-      };
-
-      if (typeof window !== 'undefined') {
-        try {
-          const deleted: string[] = JSON.parse(localStorage.getItem('uno_deleted_item_ids') || '[]');
-          if (deleted.includes(newItem.id)) {
-            localStorage.setItem('uno_deleted_item_ids', JSON.stringify(deleted.filter((d) => d !== newItem.id)));
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      persistItems([newItem, ...items]);
-
-      fetch('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newItem),
-      }).catch(console.error);
-    }
-    setShowItemModal(false);
   };
 
   const getStatusSelectStyle = (status: InventorySimpleStatus = 'Available') => {
@@ -634,183 +458,22 @@ export default function InventoryCentralPage() {
         </div>
       </div>
 
-      {/* Add / Edit Item Modal */}
-      {showItemModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FAF8F5] max-w-md w-full p-6 border border-[#E8E4DC] shadow-2xl space-y-4 rounded-lg">
-            <div className="flex items-center justify-between border-b border-[#E8E4DC] pb-3">
-              <h3 className="font-serif-luxury text-2xl text-[#191C1A]">
-                {editingItem ? 'Edit Inventory Item' : 'Add New Item'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowItemModal(false)}
-                className="text-xs text-[#6B726A] hover:text-black"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-[#6B726A] mb-1 font-medium">Item Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Ivory Cream Suit"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
-                />
-              </div>
-
-              {/* Garment Image Upload */}
-              <div>
-                <label className="block text-[#6B726A] mb-1 font-medium">Garment Image</label>
-                {formImage ? (
-                  <div className="relative flex items-center gap-3 p-2.5 bg-white border border-[#ECDCCB] rounded-xl">
-                    <div className="relative w-14 h-16 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-[#E8E0D5]">
-                      <img
-                        src={formImage}
-                        alt="Garment preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#191C1A] flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2D6A4F]" />
-                        Photo Attached
-                      </p>
-                      <p className="text-[10px] text-[#6B726A] truncate mt-0.5">
-                        Will be displayed across boutique &amp; online catalog
-                      </p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <label className="text-[11px] font-semibold text-[#9E7B4F] hover:underline cursor-pointer">
-                          Change photo
-                          <input
-                            type="file"
-                            accept="image/*,.heic,.HEIC,.heif,.HEIF"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </label>
-                        <span className="text-[#D5CFCE]">·</span>
-                        <button
-                          type="button"
-                          onClick={() => setFormImage('')}
-                          className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-[#D5CFCE] hover:border-[#9E7B4F] rounded-xl bg-white hover:bg-[#FAF4EB]/40 transition-colors cursor-pointer group">
-                    <div className="w-9 h-9 rounded-full bg-[#FAF8F5] shadow-2xs flex items-center justify-center text-[#9E7B4F] group-hover:scale-105 transition-transform">
-                      <Upload className="w-4 h-4" />
-                    </div>
-                    <span className="mt-1.5 text-xs font-semibold text-[#191C1A]">
-                      Upload garment photo
-                    </span>
-                    <span className="text-[10px] text-[#6B726A]">
-                      JPG, PNG, WebP, or iPhone HEIC
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*,.heic,.HEIC,.heif,.HEIF"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#6B726A] mb-1 font-medium">Category</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as ItemCategory)}
-                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
-                  >
-                    <option value="Suits">Suit</option>
-                    <option value="Tuxedo">Tuxedo</option>
-                    <option value="Bridal gowns">Bridal Gown</option>
-                    <option value="Accessories">Accessories</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[#6B726A] mb-1 font-medium">Size Range</label>
-                  <input
-                    type="text"
-                    value={formSizeRange}
-                    onChange={(e) => setFormSizeRange(e.target.value)}
-                    placeholder="e.g. 44–52"
-                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#6B726A] mb-1 font-medium">Price (RWF)</label>
-                  <input
-                    type="number"
-                    required
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#6B726A] mb-1 font-medium">Status</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) =>
-                      setFormStatus(e.target.value as InventorySimpleStatus)
-                    }
-                    className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
-                  >
-                    <option value="Available">Available</option>
-                    <option value="Rented">Rented</option>
-                    <option value="Dry cleaning">Dry cleaning</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[#6B726A] mb-1 font-medium">Condition</label>
-                <input
-                  type="text"
-                  value={formCondition}
-                  onChange={(e) => setFormCondition(e.target.value)}
-                  placeholder="e.g. Excellent or —"
-                  className="w-full bg-white border border-[#D5CFCE] rounded-md p-2.5 text-[#191C1A]"
-                />
-              </div>
-
-              <div className="pt-2 flex space-x-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-[#9E7B4F] hover:bg-[#86663E] text-white py-2.5 rounded-md font-semibold uppercase tracking-wider transition-colors"
-                >
-                  {editingItem ? 'Save Changes' : 'Add Item'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowItemModal(false)}
-                  className="bg-white border border-[#D5CFCE] px-4 py-2.5 rounded-md"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Unified Add / Edit Garment Modal */}
+      <GarmentModal
+        isOpen={showItemModal}
+        onClose={() => {
+          setShowItemModal(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        exchangeRate={exchangeRate}
+        onSaved={(savedItem) => {
+          const updated = editingItem
+            ? items.map((i) => (i.id === savedItem.id ? savedItem : i))
+            : [savedItem, ...items.filter((i) => i.id !== savedItem.id)];
+          persistItems(updated);
+        }}
+      />
     </div>
   );
 }

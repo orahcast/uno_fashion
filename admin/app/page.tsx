@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { RentalItem, InventorySimpleStatus, ItemCategory } from '@/lib/types';
 import { formatRWF } from '@/lib/utils';
+import GarmentModal from '@/components/GarmentModal';
 
 export default function AdminOverviewPage() {
   const [items, setItems] = useState<RentalItem[]>([]);
@@ -29,14 +30,6 @@ export default function AdminOverviewPage() {
   const [clientBook, setClientBook] = useState<any[]>([]);
   const [protocolBookings, setProtocolBookings] = useState<any[]>([]);
   const [showItemModal, setShowItemModal] = useState(false);
-
-  // Modal Form State
-  const [formName, setFormName] = useState('');
-  const [formCategory, setFormCategory] = useState<ItemCategory>('Suits');
-  const [formSizeRange, setFormSizeRange] = useState('38–44');
-  const [formPrice, setFormPrice] = useState('150000');
-  const [formStatus, setFormStatus] = useState<InventorySimpleStatus>('Available');
-  const [formImage, setFormImage] = useState<string>('');
 
   // Sync with live database and persisted items
   useEffect(() => {
@@ -134,68 +127,6 @@ export default function AdminOverviewPage() {
       b.status === 'Completed' ||
       b.status === 'Ready'
   ).reduce((sum, b) => sum + (b.rentalFee || 0), 0);
-
-  // Image upload handler
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setFormImage(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSaveItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalImage =
-      formImage.trim() ||
-      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200';
-
-    const newItem: RentalItem = {
-      id: `item-${Date.now()}`,
-      slug: formName.toLowerCase().replace(/\s+/g, '-'),
-      name: formName,
-      sku: `UF-${Math.floor(100 + Math.random() * 900)}`,
-      category: formCategory,
-      categorySlug:
-        formCategory === 'Bridal gowns'
-          ? 'gowns'
-          : formCategory === 'Accessories'
-          ? 'accessories'
-          : 'suits',
-      color: 'Classic',
-      fabric: 'Atelier Wool',
-      fit: 'Tailored fit',
-      description: formName,
-      rentalPrice: Number(formPrice) || 0,
-      refundableDeposit: 100000,
-      rentalPeriodDays: 4,
-      images: [finalImage],
-      sizes: [formSizeRange],
-      sizeRange: formSizeRange,
-      simpleStatus: formStatus,
-      stockBySize: [],
-      totalStock: 1,
-      readyStock: formStatus === 'Available' ? 1 : 0,
-      rentedStock: formStatus === 'Rented' ? 1 : 0,
-      inCareStock: formStatus === 'Dry cleaning' ? 1 : 0,
-      status: 'Published',
-      allowOnlineBooking: true,
-      cleaningTurnaroundDays: 1,
-    };
-    const updated = [newItem, ...items];
-    setItems(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('uno_inventory_items', JSON.stringify(updated));
-    }
-    setShowItemModal(false);
-    setFormName('');
-    setFormImage('');
-  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -492,183 +423,20 @@ export default function AdminOverviewPage() {
         </div>
       </div>
 
-      {/* Add Garment Modal */}
-      {showItemModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E8E4DC] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8E4DC] pb-3">
-              <h3 className="font-serif-luxury text-xl font-bold text-[#2A1810]">
-                Add New Garment
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowItemModal(false)}
-                className="text-xs text-[#8C7B6E] hover:text-[#2A1810] p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-[#8C7B6E] mb-1 font-semibold uppercase text-[10px]">
-                  Garment Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Asymmetry Shawl Tuxedo"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-[#D5CFCE] rounded-xl p-2.5 text-[#2A1810] focus:outline-none focus:border-[#E66826]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#8C7B6E] mb-1 font-semibold uppercase text-[10px]">
-                    Category
-                  </label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as ItemCategory)}
-                    className="w-full bg-[#FAF8F5] border border-[#D5CFCE] rounded-xl p-2.5 text-[#2A1810] focus:outline-none focus:border-[#E66826]"
-                  >
-                    <option value="Suits">Suits</option>
-                    <option value="Bridal gowns">Bridal gowns</option>
-                    <option value="Accessories">Accessories</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[#8C7B6E] mb-1 font-semibold uppercase text-[10px]">
-                    Size Range
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 38–44"
-                    value={formSizeRange}
-                    onChange={(e) => setFormSizeRange(e.target.value)}
-                    className="w-full bg-[#FAF8F5] border border-[#D5CFCE] rounded-xl p-2.5 text-[#2A1810] focus:outline-none focus:border-[#E66826]"
-                  />
-                </div>
-              </div>
-
-              {/* Garment Image Upload */}
-              <div>
-                <label className="block text-[#8C7B6E] mb-1 font-semibold uppercase text-[10px]">
-                  Garment Photo / Image
-                </label>
-                {formImage ? (
-                  <div className="relative flex items-center gap-3 p-2.5 bg-[#FAF8F5] border border-[#ECDCCB] rounded-2xl">
-                    <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-neutral-100 shrink-0 border border-[#E8E0D5]">
-                      <img
-                        src={formImage}
-                        alt="Garment preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#2A1810] flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2D6A4F]" />
-                        Photo Ready
-                      </p>
-                      <p className="text-[10px] text-[#8C7B6E] truncate mt-0.5">
-                        Will be displayed in client rentals &amp; catalog
-                      </p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <label className="text-[11px] font-semibold text-[#9E7B4F] hover:underline cursor-pointer">
-                          Change photo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </label>
-                        <span className="text-[#D5CFCE]">·</span>
-                        <button
-                          type="button"
-                          onClick={() => setFormImage('')}
-                          className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-[#D5CFCE] hover:border-[#9E7B4F] rounded-2xl bg-[#FAF8F5] hover:bg-[#FAF4EB]/60 transition-colors cursor-pointer group">
-                    <div className="w-9 h-9 rounded-full bg-white shadow-2xs flex items-center justify-center text-[#9E7B4F] group-hover:scale-105 transition-transform">
-                      <Upload className="w-4 h-4" />
-                    </div>
-                    <span className="mt-1.5 text-xs font-semibold text-[#2A1810]">
-                      Upload garment photo
-                    </span>
-                    <span className="text-[10px] text-[#8C7B6E]">
-                      JPG, PNG, or WebP from your device
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#8C7B6E] mb-1 font-semibold uppercase text-[10px]">
-                    4-Day Rental Price (Frw)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="150000"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                    className="w-full bg-[#FAF8F5] border border-[#D5CFCE] rounded-xl p-2.5 text-[#2A1810] focus:outline-none focus:border-[#E66826]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#8C7B6E] mb-1 font-semibold uppercase text-[10px]">
-                    Status
-                  </label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as InventorySimpleStatus)}
-                    className="w-full bg-[#FAF8F5] border border-[#D5CFCE] rounded-xl p-2.5 text-[#2A1810] focus:outline-none focus:border-[#E66826]"
-                  >
-                    <option value="Available">Available</option>
-                    <option value="Rented">On Rental</option>
-                    <option value="Dry cleaning">Eco Cleaning</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-3 flex space-x-2.5">
-                <button
-                  type="submit"
-                  className="flex-1 bg-[#4A2311] hover:bg-[#34180A] text-white py-2.5 rounded-full font-semibold uppercase tracking-wider text-[11px] transition-colors"
-                >
-                  Add to Collection
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowItemModal(false)}
-                  className="bg-[#FAF8F5] border border-[#D5CFCE] px-5 py-2.5 rounded-full text-xs"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Unified Add Garment Modal */}
+      <GarmentModal
+        isOpen={showItemModal}
+        onClose={() => setShowItemModal(false)}
+        onSaved={(newItem) => {
+          setItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
+          if (typeof window !== 'undefined') {
+            try {
+              const current = [newItem, ...items.filter((i) => i.id !== newItem.id)];
+              localStorage.setItem('uno_inventory_items', JSON.stringify(current));
+            } catch (e) {}
+          }
+        }}
+      />
     </div>
   );
 }

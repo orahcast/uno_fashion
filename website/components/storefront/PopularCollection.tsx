@@ -23,17 +23,77 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
 
   // Fetch live items from the database/API & subscribe to real-time changes
   useEffect(() => {
-    // 1. Fetch catalog items
-    fetch('/api/items')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setItems(data);
+    // Function to re-fetch items
+    const reloadItems = () => {
+      fetch('/api/items')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setItems(data);
+          }
+        })
+        .catch(console.error);
+    };
+
+    // 1. Fetch catalog items immediately on mount
+    reloadItems();
+
+    // 2. Instant cross-tab sync via BroadcastChannel (0ms realtime from Admin)
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('uno_items_sync');
+        bc.onmessage = (event) => {
+          if (event.data?.action === 'upsert' && event.data.item) {
+            const newItem = event.data.item;
+            setItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
+          } else if (event.data?.action === 'delete' && event.data.id) {
+            setItems((prev) => prev.filter((i) => i.id !== event.data.id));
+          } else {
+            reloadItems();
+          }
+        };
+      } catch (bcErr) {
+        console.warn('BroadcastChannel error:', bcErr);
+      }
+    }
+
+    // 3. Storage event listener (across browser windows)
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'uno_items_updated_at' || e.key === 'uno_inventory_items') {
+        reloadItems();
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorage);
+      window.addEventListener('focus', reloadItems);
+    }
+
+    // 4. Supabase Realtime: instantly update collection when item is added/edited/deleted
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime:items_popular')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'items' },
+        () => {
+          reloadItems();
+        }
+      )
+      .on('broadcast', { event: 'item_changed' }, (payload) => {
+        if (payload?.payload) {
+          const newItem = payload.payload;
+          setItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
+        } else {
+          reloadItems();
         }
       })
-      .catch((err) => console.error('Error loading popular collection:', err));
+      .subscribe();
 
-    // 2. Fetch USD currency exchange rate
+    // Polling fallback every 8 seconds so other devices see additions without manual refresh
+    const pollTimer = setInterval(reloadItems, 8000);
+
+    // 5. Fetch USD currency exchange rate
     fetch('/api/currency')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -42,26 +102,6 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         }
       })
       .catch((err) => console.error('Error fetching currency rate:', err));
-
-    // Supabase Realtime: instantly update collection when item is added/edited/deleted
-    const supabase = createClient();
-    const channel = supabase
-      .channel('realtime:items_popular')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'items' },
-        () => {
-          fetch('/api/items')
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-              if (Array.isArray(data)) {
-                setItems(data);
-              }
-            })
-            .catch(console.error);
-        }
-      )
-      .subscribe();
 
     // Supabase Realtime: currency rate changes
     const currencyChannel = supabase
@@ -81,6 +121,12 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
       .subscribe();
 
     return () => {
+      if (bc) bc.close();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorage);
+        window.removeEventListener('focus', reloadItems);
+      }
+      clearInterval(pollTimer);
       supabase.removeChannel(channel);
       supabase.removeChannel(currencyChannel);
     };

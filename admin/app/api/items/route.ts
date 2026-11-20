@@ -102,6 +102,7 @@ export async function GET(request: Request) {
   const id = searchParams.get('id');
   const deletedIds = getDeletedItemIds();
 
+  let dbItems: any[] = [];
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createClient();
@@ -114,7 +115,7 @@ export async function GET(request: Request) {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        const mapped = data
+        dbItems = data
           .filter((item) => !deletedIds.includes(item.id))
           .map((item) => ({
             id: item.id,
@@ -146,18 +147,29 @@ export async function GET(request: Request) {
             badge: item.badge,
             isArchived: item.is_archived,
           }));
-        return NextResponse.json(mapped);
       }
     } catch (err) {
       console.error('Admin Supabase fetch items error:', err);
     }
   }
 
-  let items = getLocalItems();
+  // Always read local items (so locally added/saved items like custom suits are NEVER lost on refresh!)
+  const localItems = getLocalItems();
+
+  // Merge database items and local items seamlessly
+  const itemMap = new Map<string, any>();
+  dbItems.forEach((item) => itemMap.set(item.id, item));
+  localItems.forEach((item: any) => {
+    if (!deletedIds.includes(item.id)) {
+      itemMap.set(item.id, { ...itemMap.get(item.id), ...item });
+    }
+  });
+
+  let merged = Array.from(itemMap.values());
   if (id) {
-    items = items.filter((i: any) => i.id === id);
+    merged = merged.filter((i: any) => i.id === id);
   }
-  return NextResponse.json(items);
+  return NextResponse.json(merged);
 }
 
 export async function POST(request: Request) {

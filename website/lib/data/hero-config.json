@@ -1,24 +1,17 @@
 {
-  "image": "https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795161063027.jpg",
+  "image": "https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg",
   "alt": "Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali",
   "headlinePrefix": "TAILORING — WITH",
   "headlineHighlight": "QUIET AUTHORITY",
   "subtitle": "Uno Fashion Agency Ltd provides bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.",
   "gallery": [
     {
-      "id": "custom-1795161074407-5o0k",
-      "name": "looking2",
+      "id": "custom-1795165500808-wb69",
+      "src": "https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg",
       "tag": "Studio Upload",
-      "src": "https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795161072451.jpg",
-      "isDefault": false
-    },
-    {
-      "id": "custom-1795161064211-fwpn",
-      "name": "Report expense ",
-      "tag": "Studio Upload",
-      "src": "https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795161063027.jpg",
+      "name": "a92777d1-a47c-4577-8",
       "isDefault": false
     }
   ],
-  "updatedAt": "2026-11-20T07:51:43.931Z"
+  "updatedAt": "2026-11-20T09:14:27.167Z"
 }
