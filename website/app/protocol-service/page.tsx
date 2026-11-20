@@ -20,7 +20,7 @@ const DEFAULT_PROTOCOL_PHOTOS = [
   {
     title: 'Day-Of Suite Dressing',
     caption: 'On-site steaming, Windsor knotting, and boutonnière pinning.',
-    image: '/images/hero-men.jpg',
+    image: 'https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg',
   },
   {
     title: 'VIP & Gala Composure',

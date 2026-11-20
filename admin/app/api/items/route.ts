@@ -179,7 +179,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Item name is required' }, { status: 400 });
     }
 
-    const slug =
+    let slug: string =
       body.slug ||
       body.name
         .toLowerCase()
@@ -189,11 +189,40 @@ export async function POST(request: Request) {
     const itemId = body.id || `item-${Date.now().toString().slice(-6)}`;
     removeDeletedItemId(itemId);
 
+    // Guarantee a unique slug and SKU (Supabase has unique constraints on items.slug and items.sku)
+    let sku: string = body.sku || `UF-${Math.floor(100 + Math.random() * 900)}`;
+    if (isSupabaseConfigured()) {
+      try {
+        const sb = await createClient();
+        const { data: clash } = await sb
+          .from('items')
+          .select('id')
+          .eq('slug', slug)
+          .neq('id', itemId)
+          .limit(1);
+        if (clash && clash.length > 0) {
+          slug = `${slug}-${Date.now().toString().slice(-5)}`;
+        }
+        for (let attempt = 0; attempt < 8; attempt++) {
+          const { data: skuClash } = await sb
+            .from('items')
+            .select('id')
+            .eq('sku', sku)
+            .neq('id', itemId)
+            .limit(1);
+          if (!skuClash || skuClash.length === 0) break;
+          sku = `UF-${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+      } catch (e) {
+        console.error('Slug/SKU uniqueness check failed:', e);
+      }
+    }
+
     const record = {
       id: itemId,
       slug,
       name: body.name,
-      sku: body.sku || `SU-${Math.floor(100 + Math.random() * 900)}`,
+      sku,
       category: body.category || 'Suits',
       category_slug: body.categorySlug || 'suits',
       color: body.color || '',
@@ -295,7 +324,7 @@ export async function POST(request: Request) {
 
         if (error) {
           console.error('Admin Supabase item upsert error:', error);
-          // Still return success since local storage saved it
+          return NextResponse.json({ success: true, item: record, warning: error.message });
         } else if (data) {
           return NextResponse.json({ success: true, item: data });
         }

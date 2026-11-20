@@ -10,7 +10,7 @@ const DEFAULT_SLIDES = [
   { src: '/images/landing-page-1.jpeg', title: 'Wardrobe Alignment' },
   { src: '/images/landing-page-2.jpeg', title: 'Entrance Etiquette' },
   { src: '/images/landing-page-3.jpeg', title: 'VIP Stage Presence' },
-  { src: '/images/hero-men.jpg', title: 'Day-Of Suite Dressing' },
+  { src: 'https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg', title: 'Day-Of Suite Dressing' },
 ];
 
 export default function WeddingServices() {

@@ -18,7 +18,32 @@ interface PopularCollectionProps {
 
 export default function PopularCollection({ items: initialPropItems }: PopularCollectionProps) {
   const router = useRouter();
-  const [items, setItems] = useState<RentalItem[]>(initialPropItems || []);
+  const [items, setItems] = useState<RentalItem[]>(() => {
+    if (initialPropItems && initialPropItems.length > 0) return initialPropItems;
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('uno_inventory_items');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (initialPropItems && initialPropItems.length > 0) return false;
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('uno_inventory_items');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        }
+      } catch (e) {}
+    }
+    return true;
+  });
   const [activeTab, setActiveTab] = useState<'all' | 'suits' | 'gowns'>('all');
   const [selectedSuit, setSelectedSuit] = useState<RentModalSuit | null>(null);
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
@@ -37,6 +62,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         .then((data) => {
           if (Array.isArray(data)) {
             setItems(data);
+            setIsLoading(false);
             if (typeof window !== 'undefined') {
               try {
                 localStorage.setItem('uno_inventory_items', JSON.stringify(data));
@@ -44,7 +70,10 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
             }
           }
         })
-        .catch(console.error);
+        .catch((err) => {
+          console.error(err);
+          setIsLoading(false);
+        });
     };
 
     // 1. Fetch catalog items immediately on mount
@@ -230,10 +259,22 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
         </div>
 
         {/* Dynamic Items Grid */}
-        {displayItems.length === 0 ? (
+        {isLoading && displayItems.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-5 gap-y-8">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col space-y-3 animate-pulse">
+                <div className="aspect-[3/4] w-full bg-[#EAE5DC]/70 rounded-xl" />
+                <div className="space-y-1.5 pt-1">
+                  <div className="h-4 bg-[#EAE5DC]/70 rounded w-3/4" />
+                  <div className="h-3 bg-[#EAE5DC]/50 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : displayItems.length === 0 ? (
           <div className="py-12 text-center text-[#8C8075] border border-dashed border-[#EAE5DC] rounded-xl bg-white/50">
-            <p className="text-sm font-medium text-[#191C1A]">New Collection Arriving Soon</p>
-            <p className="text-xs text-[#8C8075] mt-1">Our atelier is currently curating the upcoming suiting and couture line.</p>
+            <p className="text-sm font-medium text-[#191C1A]">No pieces found in this category</p>
+            <p className="text-xs text-[#8C8075] mt-1">Check back soon or explore our other collections.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-5 gap-y-8">
@@ -242,7 +283,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
               id: item.id,
               name: item.name,
               rentalPrice: item.rentalPrice,
-              image: item.images[0] || '/images/hero-men.jpg',
+              image: item.images[0] || 'https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg',
               sizes: (item.sizes && item.sizes.length > 0) ? item.sizes.join(' · ') : 'Tailored to measure',
               category: item.category,
             };
@@ -263,7 +304,7 @@ export default function PopularCollection({ items: initialPropItems }: PopularCo
                   className="relative aspect-[3/4] w-full bg-[#EAE8E4] overflow-hidden rounded-xl shadow-2xs hover:shadow-md transition-all group-hover:-translate-y-0.5 cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#9E7B4F]"
                 >
                   <Image
-                    src={item.images[0] || '/images/hero-men.jpg'}
+                    src={item.images[0] || 'https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg'}
                     alt={item.name}
                     fill
                     className="object-cover object-top group-hover:scale-104 transition-transform duration-500 ease-out"

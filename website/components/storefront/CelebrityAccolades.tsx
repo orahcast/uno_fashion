@@ -3,62 +3,34 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Award, Star, Sparkles, CheckCircle2 } from 'lucide-react';
-import { INITIAL_ACCOLADES } from '@/lib/data/mock-catalog';
 import { AccoladeItem } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 
-export default function CelebrityAccolades() {
-  const [accolades, setAccolades] = useState<AccoladeItem[]>(INITIAL_ACCOLADES);
+export default function CelebrityAccolades({ initialAccolades }: { initialAccolades?: AccoladeItem[] }) {
+  // Starts from server-rendered real data only (never sample placeholders)
+  const [accolades, setAccolades] = useState<AccoladeItem[]>(initialAccolades ?? []);
 
   useEffect(() => {
-    // 1. Fetch live from server API
-    fetch('/api/accolades')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setAccolades(data);
-        }
-      })
-      .catch(() => {
-        // Fallback to localStorage if offline/custom
-        if (typeof window !== 'undefined') {
-          const stored = localStorage.getItem('uno_accolades');
-          if (stored) {
-            try {
-              const parsed = JSON.parse(stored);
-              if (Array.isArray(parsed)) {
-                setAccolades(parsed);
-              }
-            } catch (e) {
-              console.error('Failed to parse localStorage accolades', e);
-            }
-          }
-        }
-      });
-    // 2. Supabase Realtime: instantly update VIP accolades when admin edits
+    const reload = () => {
+      fetch('/api/accolades')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (Array.isArray(data)) setAccolades(data);
+        })
+        .catch(() => {});
+    };
+    if (initialAccolades === undefined) reload();
+
     const supabase = createClient();
     const channel = supabase
       .channel('realtime:accolades')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'accolades' },
-        () => {
-          fetch('/api/accolades')
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-              if (Array.isArray(data)) {
-                setAccolades(data);
-              }
-            })
-            .catch(console.error);
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'accolades' }, reload)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [initialAccolades]);
 
   // Double the list for seamless continuous infinite marquee
   const displayItems = [...accolades, ...accolades];
@@ -79,6 +51,7 @@ export default function CelebrityAccolades() {
       </div>
 
       {/* Infinite Scrolling Marquee */}
+      {accolades.length > 0 && (
       <div className="relative w-full overflow-hidden">
         {/* Soft edge blur gradients */}
         <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
@@ -134,6 +107,7 @@ export default function CelebrityAccolades() {
           ))}
         </div>
       </div>
+      )}
 
       {/* Subtle indicator hint */}
       <div className="mt-6 text-center">

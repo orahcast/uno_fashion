@@ -29,7 +29,19 @@ export default function CollectionPage() {
         }
       } catch (e) {}
     }
-    return INITIAL_ITEMS;
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('uno_inventory_items');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        }
+      } catch (e) {}
+    }
+    return true;
   });
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_USD_RATE);
 
@@ -41,6 +53,7 @@ export default function CollectionPage() {
         .then((data) => {
           if (Array.isArray(data)) {
             setItems(data);
+            setIsLoading(false);
             if (typeof window !== 'undefined') {
               try {
                 localStorage.setItem('uno_inventory_items', JSON.stringify(data));
@@ -48,7 +61,10 @@ export default function CollectionPage() {
             }
           }
         })
-        .catch(console.error);
+        .catch((err) => {
+          console.error(err);
+          setIsLoading(false);
+        });
     };
 
     // 1. Fetch catalog items immediately on mount
@@ -258,7 +274,19 @@ export default function CollectionPage() {
       </div>
 
       {/* Product Grid - Full Width 5-Column Grid */}
-      {filteredItems.length === 0 ? (
+      {isLoading && filteredItems.length === 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-7">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex flex-col space-y-2.5 animate-pulse">
+              <div className="aspect-[3/4] w-full bg-[#EAE5DC]/70 rounded-xl" />
+              <div className="space-y-1.5 pt-1">
+                <div className="h-4 bg-[#EAE5DC]/70 rounded w-3/4" />
+                <div className="h-3 bg-[#EAE5DC]/50 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
         <div className="py-16 text-center">
           <p className="font-serif-luxury text-xl text-[#191C1A]">
             No items in this category currently.

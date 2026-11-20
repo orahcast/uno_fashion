@@ -110,7 +110,7 @@ const jsonLd = {
       name: 'Uno Fashion Agency Ltd',
       url: 'https://www.unofashionagency.com',
       logo: 'https://www.unofashionagency.com/icons/icon-512.png',
-      image: 'https://www.unofashionagency.com/images/hero-men.jpg',
+      image: 'https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg',
       description:
         'Uno Fashion Agency — Bespoke suit rentals, tuxedos, and wedding protocol services in Kigali, Rwanda.',
       telephone: '+250783036628',

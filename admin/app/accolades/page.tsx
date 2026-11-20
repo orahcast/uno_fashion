@@ -124,14 +124,14 @@ export default function AccoladesAdminPage() {
       updatedList = accolades.map((acc) =>
         acc.id === editingId
           ? {
-              ...acc,
-              title: formTitle.trim(),
-              category: formCategory,
-              year: formYear.trim() || '2026',
-              image: formImage.trim(),
-              featuredPerson: formFeaturedPerson.trim() || undefined,
-              badge: formBadge.trim() || undefined,
-            }
+            ...acc,
+            title: formTitle.trim(),
+            category: formCategory,
+            year: formYear.trim() || '2026',
+            image: formImage.trim(),
+            featuredPerson: formFeaturedPerson.trim() || undefined,
+            badge: formBadge.trim() || undefined,
+          }
           : acc
       );
     } else {
@@ -575,11 +575,10 @@ export default function AccoladesAdminPage() {
                           if (cat === 'Press') setFormBadge('Accreditation');
                         }
                       }}
-                      className={`py-2 text-xs font-medium rounded-lg border transition-all ${
-                        formCategory === cat
-                          ? 'border-[#C4A47C] bg-[#FAF8F5] text-[#14100E] font-semibold ring-1 ring-[#C4A47C]'
-                          : 'border-[#E8E4DC] text-[#6B726A] hover:bg-[#FAF8F5]'
-                      }`}
+                      className={`py-2 text-xs font-medium rounded-lg border transition-all ${formCategory === cat
+                        ? 'border-[#C4A47C] bg-[#FAF8F5] text-[#14100E] font-semibold ring-1 ring-[#C4A47C]'
+                        : 'border-[#E8E4DC] text-[#6B726A] hover:bg-[#FAF8F5]'
+                        }`}
                     >
                       {cat}
                     </button>

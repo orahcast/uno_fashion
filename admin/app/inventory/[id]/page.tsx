@@ -32,7 +32,9 @@ export default function EditItemPage({
     INITIAL_ITEMS.find((i) => i.id === resolvedParams.id) || INITIAL_ITEMS[0];
 
   const [name, setName] = useState(isNew ? '' : existingItem.name);
-  const [sku, setSku] = useState(isNew ? 'SU-004' : existingItem.sku);
+  const [sku, setSku] = useState(() =>
+    isNew ? `UF-${Math.floor(1000 + Math.random() * 9000)}` : existingItem.sku
+  );
   const [category, setCategory] = useState(isNew ? 'Suits' : existingItem.category);
   const [color, setColor] = useState(isNew ? 'Black' : existingItem.color);
   const [fabric, setFabric] = useState(isNew ? 'Italian wool' : existingItem.fabric);
@@ -142,12 +144,12 @@ export default function EditItemPage({
   const [stockMatrix, setStockMatrix] = useState<SizeStock[]>(
     isNew
       ? [
-          { size: 'UK 36', total: 1, rented: 0, care: 0, ready: 1, reserved: 0 },
-          { size: 'UK 38', total: 2, rented: 0, care: 0, ready: 2, reserved: 0 },
-          { size: 'UK 40', total: 3, rented: 1, care: 0, ready: 2, reserved: 0 },
-          { size: 'UK 42', total: 2, rented: 0, care: 0, ready: 2, reserved: 0 },
-          { size: 'UK 44', total: 1, rented: 0, care: 0, ready: 1, reserved: 0 },
-        ]
+        { size: 'UK 36', total: 1, rented: 0, care: 0, ready: 1, reserved: 0 },
+        { size: 'UK 38', total: 2, rented: 0, care: 0, ready: 2, reserved: 0 },
+        { size: 'UK 40', total: 3, rented: 1, care: 0, ready: 2, reserved: 0 },
+        { size: 'UK 42', total: 2, rented: 0, care: 0, ready: 2, reserved: 0 },
+        { size: 'UK 44', total: 1, rented: 0, care: 0, ready: 1, reserved: 0 },
+      ]
       : existingItem.stockBySize
   );
 
@@ -173,15 +175,16 @@ export default function EditItemPage({
     e.preventDefault();
     setIsSaving(true);
 
-    const slug =
-      existingItem.slug ||
+    const nameSlug =
       name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+        .replace(/(^-|-$)/g, '') || 'item';
+    const slug = isNew ? `${nameSlug}-${Date.now().toString().slice(-5)}` : existingItem.slug || nameSlug;
 
     const updatedItem: RentalItem = {
-      ...existingItem,
+      ...(isNew ? ({} as Partial<RentalItem>) : existingItem),
+      categorySlug: category.toLowerCase().includes('gown') || category.toLowerCase().includes('dress') ? 'gowns' : 'suits',
       id: isNew ? `item-${Date.now()}` : existingItem.id,
       slug,
       name,
@@ -201,7 +204,7 @@ export default function EditItemPage({
       totalStock: totalCalculated,
       readyStock: readyCalculated,
       simpleStatus: readyCalculated > 0 ? 'Available' : 'Rented',
-    };
+    } as RentalItem;
 
     // 1. Sync localStorage
     if (typeof window !== 'undefined') {
@@ -218,13 +221,31 @@ export default function EditItemPage({
 
     // 2. Persist to live API / Supabase
     try {
-      await fetch('/api/items', {
+      const res = await fetch('/api/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedItem),
       });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.error) {
+        alert(`Could not save item: ${json?.error || res.statusText}`);
+        setIsSaving(false);
+        return;
+      }
+      if (json?.warning) {
+        alert(`Saved locally, but database sync failed: ${json.warning}`);
+      }
+      try {
+        const bc = new BroadcastChannel('uno_items_sync');
+        bc.postMessage({ action: 'upsert', item: { ...updatedItem, ...(json?.item || {}), slug: json?.item?.slug || updatedItem.slug } });
+        bc.close();
+        localStorage.setItem('uno_items_updated_at', String(Date.now()));
+      } catch (e) { }
     } catch (err) {
       console.error('Error saving item:', err);
+      alert('Network error while saving item. Please try again.');
+      setIsSaving(false);
+      return;
     }
 
     setIsSaving(false);

@@ -15,7 +15,7 @@ interface HeroConfig {
 }
 
 const DEFAULT_CONFIG: HeroConfig = {
-  image: '/images/hero-men.jpg',
+  image: 'https://oyauupqqhprwynkqyuzr.supabase.co/storage/v1/object/public/inventory-photos/hero-1795165499923.jpg',
   alt: 'Uno Fashion Agency - Tailoring & Wedding Protocol in Kigali',
   headlinePrefix: 'TAILORING — WITH',
   headlineHighlight: 'QUIET AUTHORITY',
@@ -23,10 +23,22 @@ const DEFAULT_CONFIG: HeroConfig = {
     'Uno Fashion Agency Ltd provides bespoke suit rentals, tuxedos, and wedding protocol services to ensure you make an indelible impression across Kigali.',
 };
 
-export default function Hero() {
+export default function Hero({ initialConfig }: { initialConfig?: HeroConfig }) {
   const phoneNumber = '+250 783 036 628';
   const cleanPhone = '250783036628';
-  const [config, setConfig] = useState<HeroConfig>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<HeroConfig>(() => {
+    if (initialConfig && initialConfig.image) return initialConfig;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('uno_hero_config');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.image) return { ...DEFAULT_CONFIG, ...parsed };
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_CONFIG;
+  });
 
   useEffect(() => {
     // 1. Instant check from localStorage
@@ -127,7 +139,7 @@ export default function Hero() {
     };
   }, []);
 
-  const heroImageSrc = config?.image || '/images/hero-men.jpg';
+  const heroImageSrc = config?.image || DEFAULT_CONFIG.image;
   const isDataUrl = heroImageSrc.startsWith('data:');
 
   return (
