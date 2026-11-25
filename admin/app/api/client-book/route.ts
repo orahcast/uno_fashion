@@ -95,19 +95,30 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id } = body;
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'id and status required' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'id required' }, { status: 400 });
+    }
+
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (body.status !== undefined) updates.status = body.status;
+    if (body.clientName !== undefined) updates.client_name = body.clientName;
+    if (body.telephone !== undefined) updates.telephone = body.telephone;
+    if (body.nationalId !== undefined) updates.national_id = body.nationalId || '—';
+    if (body.outfitTaken !== undefined) updates.outfit_taken = body.outfitTaken;
+    if (body.returnDue !== undefined) updates.return_due = body.returnDue;
+    if (body.dateLogged !== undefined) updates.date_logged = body.dateLogged;
+    if (body.timeLogged !== undefined) updates.time_logged = body.timeLogged;
+
+    if (Object.keys(updates).length === 1) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
     }
 
     if (isSupabaseConfigured()) {
       try {
         const supabase = await createClient();
-        const { error } = await supabase
-          .from('client_book')
-          .update({ status, updated_at: new Date().toISOString() })
-          .eq('id', id);
+        const { error } = await supabase.from('client_book').update(updates).eq('id', id);
 
         if (error) {
           console.error('Admin Supabase client_book patch error:', error);
